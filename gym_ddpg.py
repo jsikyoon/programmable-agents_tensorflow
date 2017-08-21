@@ -15,8 +15,6 @@ def main():
 
     for episode in range(EPISODES):
         state = env.reset()
-        print(len(state));exit(1);
-        #print("episode:"+str(episode))
         # Train
         for step in range(env.spec.timestep_limit):
             action = agent.noise_action(state)

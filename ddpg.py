@@ -1,7 +1,8 @@
 # -----------------------------------
 # Deep Deterministic Policy Gradient
 # Author: Flood Sung
-# Date: 2016.5.4
+# Modification by Jaesik Yoon
+# Date: 2017.08.20
 # -----------------------------------
 import gym
 import tensorflow as tf
@@ -10,27 +11,56 @@ from ou_noise import OUNoise
 from critic_network import CriticNetwork 
 from actor_network_bn import ActorNetwork
 from replay_buffer import ReplayBuffer
+from detector import Detector
+#from relational_nets import Relational_nets
 
 # Hyper Parameters:
 
-REPLAY_BUFFER_SIZE = 1000000
-REPLAY_START_SIZE  = 10000
-BATCH_SIZE = 64
-GAMMA = 0.99
-
+REPLAY_BUFFER_SIZE = 1000000;
+REPLAY_START_SIZE  = 10000;
+BATCH_SIZE = 64;
+GAMMA = 0.99;
+fea_size=18;
+order_num=10;
 
 class DDPG:
     """docstring for DDPG"""
     def __init__(self, env):
         self.name = 'DDPG' # name for uploading results
-        self.environment = env
-        # Randomly initialize actor network and critic network
-        # with both their target networks
-        self.state_dim = env.observation_space.shape[0]
-        self.action_dim = env.action_space.shape[0]
+        self.environment = env;
+        self.fea_size=fea_size;
+        self.state_dim = env.observation_space.shape[0];
+        self.action_dim = env.action_space.shape[0];
+        self.order_num=order_num;
+        self.obj_num=int(self.state_dim/self.fea_size);
         
         self.sess = tf.InteractiveSession()
+     
+        # Detector
+        self.detector=Detector(self.sess,self.state_dim);
+        self.Theta=tf.reshape(self.detector.Theta,[-1,self.obj_num,9]);
+        self.Theta=tf.transpose(self.Theta,perm=[0,2,1]);
+        self.Theta=tf.unstack(self.Theta,9,1);
 
+        # Program
+        self.p=self.Theta[0];
+        self.program_order=tf.placeholder(tf.int32,[self.order_num,3]);
+        self.program_order2=tf.unstack(self.program_order,self.order_num,0);
+        for i in range(self.order_num):
+          self.program_order2[i]=tf.unstack(self.program_order2[i],3,0);
+        for i in range(self.order_num):
+          for k in range(9):
+            for l in range(k+1,9):
+              # not=1, and=2, or=3
+              self.p=tf.cond(tf.equal(self.program_order2[i][0],1)&tf.equal(self.program_order2[i][1],k),lambda:1-self.Theta[k],lambda:self.p);
+              self.p=tf.cond(tf.equal(self.program_order2[i][0],1)&tf.equal(self.program_order2[i][1],-1),lambda:1-self.p,lambda:self.p);
+              self.p=tf.cond(tf.equal(self.program_order2[i][0],2)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],l),lambda:tf.multiply(self.Theta[k],self.Theta[l]),lambda:self.p);
+              self.p=tf.cond(tf.equal(self.program_order2[i][0],2)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],-1),lambda:tf.multiply(self.Theta[k],self.p),lambda:self.p);
+              self.p=tf.cond(tf.equal(self.program_order2[i][0],3)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],l),lambda:self.Theta[k]+self.Theta[l]-tf.multiply(self.Theta[k],self.Theta[l]),lambda:self.p);
+              self.p=tf.cond(tf.equal(self.program_order2[i][0],3)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],l),lambda:self.Theta[k]+self.p-tf.multiply(self.Theta[k],self.p),lambda:self.p);
+          
+        print(self.p);
+        exit(1);
         self.actor_network = ActorNetwork(self.sess,self.state_dim,self.action_dim)
         self.critic_network = CriticNetwork(self.sess,self.state_dim,self.action_dim)
         
