@@ -1,40 +1,43 @@
+# -----------------------------------
+# Deep Deterministic Policy Gradient
+# Author: Flood Sung
+# Modified by Jaesik Yoon for Programmable Agents
+# Date: 2016.5.4
+# -----------------------------------
 import gym
 import tensorflow as tf
 import numpy as np
+from ou_noise import OUNoise
+from actor_network import ActorNetwork
+from critic_network import CriticNetwork 
 from replay_buffer import ReplayBuffer
-from detector import Detector
-from message_passing import Message_passing
-from program import Program
 
 # Hyper Parameters:
 
-REPLAY_BUFFER_SIZE = 1000000;
-REPLAY_START_SIZE  = 10000;
-BATCH_SIZE = 64;
-GAMMA = 0.99;
+REPLAY_BUFFER_SIZE = 1000000
+REPLAY_START_SIZE  = 10000
+BATCH_SIZE = 64
+GAMMA = 0.99
 
-class PA:
+
+class DDPG:
+    """docstring for DDPG"""
     def __init__(self, env):
-        self.name = 'PA' 
-        self.environment = env;
-        self.fea_size=env.fea_size;
-        self.state_dim = env.observation_space.shape[0];
-        self.action_dim = env.action_space.shape[0];
+        self.name = 'DDPG' # name for uploading results
+        self.environment = env
+        # Randomly initialize actor network and critic network
+        # with both their target networks
+        self.state_dim = env.observation_space.shape[0]
+        self.action_dim = env.action_space.shape[0]
         self.obj_num=env.obj_num;
+        self.fea_size=env.fea_size;
         self.sess = tf.InteractiveSession();
+
+        self.sess = tf.InteractiveSession()
+
+        self.actor_network = ActorNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
+        self.critic_network = CriticNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
         
-        # Detector
-        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size);
-
-        # Program
-        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta);
-        
-        # Message Passing
-        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p);  
-
-
-
-
         # initialize replay buffer
         self.replay_buffer = ReplayBuffer(REPLAY_BUFFER_SIZE)
 

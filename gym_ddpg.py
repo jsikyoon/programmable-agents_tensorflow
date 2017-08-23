@@ -1,5 +1,5 @@
 import filter_env
-from pa import *
+from ddpg import *
 import gc
 gc.enable()
 
@@ -10,7 +10,7 @@ TEST = 10
 
 def main():
     env = filter_env.makeFilteredEnv(gym.make(ENV_NAME))
-    agent = PA(env)
+    agent = DDPG(env)
 
     for episode in range(EPISODES):
         state = env.reset()

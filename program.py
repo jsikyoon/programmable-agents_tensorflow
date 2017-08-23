@@ -6,7 +6,7 @@ import math
 order_num=10;
 
 class Program:
-  def __init__(self,sess,state_dim,fea_size,obj_num,Theta):
+  def __init__(self,sess,state_dim,obj_num,fea_size,Theta,postfix):
     self.sess = sess;
     self.state_dim = state_dim;
     self.fea_size=fea_size;
@@ -14,6 +14,7 @@ class Program:
     self.order_num=order_num;
     self.Theta=Theta;
     self.p,self.program_order = self.compile_order();
+    self.postfix=postfix;
 
   def compile_order(self):
     self.Theta=tf.reshape(self.Theta,[-1,self.obj_num,9]);
@@ -36,3 +37,23 @@ class Program:
           p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:self.Theta[k]+p-tf.multiply(self.Theta[k],p),lambda:p);
     return p, program_order;
 		
+  def run_target_nets(self,Theta):
+    Theta=tf.reshape(Theta,[-1,self.obj_num,9]);
+    Theta=tf.transpose(Theta,perm=[0,2,1]);
+    Theta=tf.unstack(Theta,9,1);
+    p=Theta[0];
+    program_order=self.program_order;
+    program_order2=tf.unstack(program_order,self.order_num,0);
+    for i in range(self.order_num):
+      program_order2[i]=tf.unstack(program_order2[i],3,0);
+    for i in range(self.order_num):
+      for k in range(9):
+        for l in range(k+1,9):
+          # not=1, and=2, or=3
+          p=tf.cond(tf.equal(program_order2[i][0],1)&tf.equal(program_order2[i][1],k),lambda:1-Theta[k],lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],1)&tf.equal(program_order2[i][1],-1),lambda:1-p,lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],2)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:tf.multiply(Theta[k],self.Theta[l]),lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],2)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],-1),lambda:tf.multiply(Theta[k],p),lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:Theta[k]+Theta[l]-tf.multiply(self.Theta[k],self.Theta[l]),lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:Theta[k]+p-tf.multiply(Theta[k],p),lambda:p);
+    return p;
