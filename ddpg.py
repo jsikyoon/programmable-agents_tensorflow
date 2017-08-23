@@ -12,7 +12,7 @@ from critic_network import CriticNetwork
 from actor_network_bn import ActorNetwork
 from replay_buffer import ReplayBuffer
 from detector import Detector
-#from relational_nets import Relational_nets
+from message_passing import Message_passing
 
 # Hyper Parameters:
 
@@ -58,7 +58,7 @@ class DDPG:
               self.p=tf.cond(tf.equal(self.program_order2[i][0],2)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],-1),lambda:tf.multiply(self.Theta[k],self.p),lambda:self.p);
               self.p=tf.cond(tf.equal(self.program_order2[i][0],3)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],l),lambda:self.Theta[k]+self.Theta[l]-tf.multiply(self.Theta[k],self.Theta[l]),lambda:self.p);
               self.p=tf.cond(tf.equal(self.program_order2[i][0],3)&tf.equal(self.program_order2[i][1],k)&tf.equal(self.program_order2[i][2],l),lambda:self.Theta[k]+self.p-tf.multiply(self.Theta[k],self.p),lambda:self.p);
-          
+        self.message_passing=Message_passing(self.sess,self.state_dim,self.p);  
         print(self.p);
         exit(1);
         self.actor_network = ActorNetwork(self.sess,self.state_dim,self.action_dim)
