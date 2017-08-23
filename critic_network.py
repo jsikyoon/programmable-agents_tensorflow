@@ -2,7 +2,9 @@
 import tensorflow as tf 
 import numpy as np
 import math
-
+from detector import Detector
+from message_passing import Message_passing
+from program import Program
 
 # Parameters
 LEARNING_RATE = 1e-3
@@ -17,6 +19,7 @@ class CriticNetwork:
         self.state_dim=state_dim;
         self.obj_num=obj_num;
         self.fea_size=fea_size;
+        self.action_dim=action_dim;
         # create q network
         self.state_input,\
         self.action_input,\
@@ -45,26 +48,37 @@ class CriticNetwork:
         self.action_gradients = tf.gradients(self.q_value_output,self.action_input)
 
     def create_q_network(self,state_dim,action_dim):
-        # the layer size could be changed
-        layer1_size = LAYER1_SIZE
-        layer2_size = LAYER2_SIZE
-
-        state_input = tf.placeholder("float",[None,state_dim])
-        action_input = tf.placeholder("float",[None,action_dim])
-
-        W1 = self.variable([state_dim,layer1_size],state_dim)
-        b1 = self.variable([layer1_size],state_dim)
-        W2 = self.variable([layer1_size,layer2_size],layer1_size+action_dim)
-        W2_action = self.variable([action_dim,layer2_size],layer1_size+action_dim)
-        b2 = self.variable([layer2_size],layer1_size+action_dim)
-        W3 = tf.Variable(tf.random_uniform([layer2_size,1],-3e-3,3e-3))
-        b3 = tf.Variable(tf.random_uniform([1],-3e-3,3e-3))
-
-        layer1 = tf.nn.relu(tf.matmul(state_input,W1) + b1)
-        layer2 = tf.nn.relu(tf.matmul(layer1,W2) + tf.matmul(action_input,W2_action) + b2)
-        q_value_output = tf.identity(tf.matmul(layer2,W3) + b3)
-
-        return state_input,action_input,q_value_output,[W1,b1,W2,W2_action,b2,W3,b3]
+        # Detector
+        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,"critic");
+        state_input=self.detector.state_input;
+        d_params=self.detector.net;
+        # Program
+        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,"critic");
+        p=self.program.p;
+        # Message Passing
+        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,"critic");
+        m_params=self.message_passing.net;
+        # get h
+        Omega_dot=self.message_passing.state_output;
+        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.fea_size]);
+        Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
+        Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
+        p_list=tf.unstack(p,self.obj_num,1);
+        h=0;
+        for i in range(self.obj_num):
+          h+=p_list[i]*Omega_dot[i];
+        # get Q
+        action_input = tf.placeholder("float",[None,action_dim]);
+        with tf.variable_scope('critic_nets'):
+          w1=tf.get_variable('w1',shape=[self.action_dim,self.fea_size]);
+          b1=tf.get_variable('b1',shape=[self.fea_size]);
+          w2=tf.get_variable('w2',shape=[self.fea_size,1]);
+          b2=tf.get_variable('b2',shape=[1]);
+          q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,w1)+b1),w2)+b2;
+        c_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic_nets');
+        # param list
+        param_list=d_params+m_params+c_params;
+        return state_input,action_input,q_value_output,param_list;
 
     def create_target_q_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim])
@@ -73,11 +87,26 @@ class CriticNetwork:
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
         target_update = ema.apply(net)
         target_net = [ema.average(x) for x in net]
-
-        layer1 = tf.nn.relu(tf.matmul(state_input,target_net[0]) + target_net[1])
-        layer2 = tf.nn.relu(tf.matmul(layer1,target_net[2]) + tf.matmul(action_input,target_net[3]) + target_net[4])
-        q_value_output = tf.identity(tf.matmul(layer2,target_net[5]) + target_net[6])
-
+        # params for each net
+        d_net=net[:self.detector.params_num];
+        m_net=net[self.detector.params_num:(self.detector.params_num+self.message_passing.params_num)];
+        c_net=net[(self.detector.params_num+self.message_passing.params_num):];
+        # run detector
+        Theta=self.detector.run_target_nets(state_input,d_net);
+        # run program
+        p=self.program.run_target_nets(Theta);
+        # run message_passing
+        Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
+        # get h
+        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.fea_size]);
+        Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
+        Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
+        p_list=tf.unstack(p,self.obj_num,1);
+        h=0;
+        for i in range(self.obj_num):
+          h+=p_list[i]*Omega_dot[i];
+        # get Q  
+        q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
         return state_input,action_input,q_value_output,target_update
 
     def update_target(self):

@@ -37,7 +37,7 @@ class DDPG:
 
         self.actor_network = ActorNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
         self.critic_network = CriticNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
-        
+        print("setting done");exit(1);
         # initialize replay buffer
         self.replay_buffer = ReplayBuffer(REPLAY_BUFFER_SIZE)
 
