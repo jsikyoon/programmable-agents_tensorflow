@@ -19,7 +19,7 @@ class ActorNetwork:
         self.fea_size=fea_size
         self.action_dim = action_dim
         # create actor network
-        self.state_input,self.action_output,self.net = self.create_network(state_dim,obj_num,fea_size,action_dim)
+        self.state_input,self.action_output,self.net,self.program_order = self.create_network(state_dim,obj_num,fea_size,action_dim)
 
         # create target actor network
         self.target_state_input,self.target_action_output,self.target_update,self.target_net = self.create_target_network(state_dim,action_dim,self.net)
@@ -44,6 +44,7 @@ class ActorNetwork:
         d_params=self.detector.net;
         # Program
         self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,"actor");
+        program_order=self.program.program_order;
         p=self.program.p;
         # Message Passing
         self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,"actor");
@@ -66,7 +67,7 @@ class ActorNetwork:
         a_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor_nets');
         param_list=d_params+m_params+a_params;
         
-        return state_input,action_output,param_list
+        return state_input,action_output,param_list,program_order
 
     def create_target_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim])
@@ -98,10 +99,11 @@ class ActorNetwork:
     def update_target(self):
         self.sess.run(self.target_update)
 
-    def train(self,q_gradient_batch,state_batch):
+    def train(self,q_gradient_batch,state_batch,program_order):
         self.sess.run(self.optimizer,feed_dict={
             self.q_gradient_input:q_gradient_batch,
-            self.state_input:state_batch
+            self.state_input:state_batch,
+            self.program_order:program_order
             })
 
     def actions(self,state_batch):

@@ -4,7 +4,6 @@ import gc
 gc.enable()
 
 ENV_NAME = 'PA-v1'
-#ENV_NAME = 'Reacher-v1'
 EPISODES = 100000
 TEST = 10
 
@@ -13,7 +12,9 @@ def main():
     agent = DDPG(env)
 
     for episode in range(EPISODES):
-        state = env.reset()
+        program_order=np.random.randint(3);
+        env.set_order(0);
+        state = env.reset();
         # Train
         for step in range(env.spec.timestep_limit):
             action = agent.noise_action(state)

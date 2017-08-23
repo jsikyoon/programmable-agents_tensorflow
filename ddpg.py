@@ -37,12 +37,15 @@ class DDPG:
 
         self.actor_network = ActorNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
         self.critic_network = CriticNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
-        print("setting done");exit(1);
+        
         # initialize replay buffer
         self.replay_buffer = ReplayBuffer(REPLAY_BUFFER_SIZE)
 
         # Initialize a random process the Ornstein-Uhlenbeck process for action exploration
         self.exploration_noise = OUNoise(self.action_dim)
+
+    def set_program_order(self,program_order):
+        self.program_order=program_order;
 
     def train(self):
         #print "train step",self.time_step
@@ -75,7 +78,7 @@ class DDPG:
         action_batch_for_gradients = self.actor_network.actions(state_batch)
         q_gradient_batch = self.critic_network.gradients(state_batch,action_batch_for_gradients)
 
-        self.actor_network.train(q_gradient_batch,state_batch)
+        self.actor_network.train(q_gradient_batch,state_batch,self.program_order)
 
         # Update the target networks
         self.actor_network.update_target()
@@ -105,13 +108,4 @@ class DDPG:
         # Re-iniitialize the random process when an episode ends
         if done:
             self.exploration_noise.reset()
-
-
-
-
-
-
-
-
-
 

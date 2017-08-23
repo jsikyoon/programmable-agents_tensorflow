@@ -78,6 +78,13 @@ def makeFilteredEnv(env):
       reward = self.filter_reward(reward);
       obs_f = self.filter_observation(obs)
       return obs_f, reward, term, info
+    
+    def set_order(self,order):
+      self.order=order;
+      f=open("program_order","w");
+      f.writelines(str(order));
+      f.close();
+
 
   fenv = FilteredEnv()
 

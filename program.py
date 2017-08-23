@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 # Parameter
-order_num=10;
+order_num=2;
 
 class Program:
   def __init__(self,sess,state_dim,obj_num,fea_size,Theta,postfix):
