@@ -1,5 +1,6 @@
 import numpy as np
 import gym
+fea_size=18;
 
 def makeFilteredEnv(env):
   """ crate a new environment class with actions and states normalized to [-1,1] """
@@ -9,7 +10,6 @@ def makeFilteredEnv(env):
     raise RuntimeError('Environment with continous action space (i.e. Box) required.')
   if not type(obsp)==gym.spaces.box.Box:
     raise RuntimeError('Environment with continous observation space (i.e. Box) required.')
-
   env_type = type(env)
   
   class FilteredEnv(env_type):
@@ -56,6 +56,8 @@ def makeFilteredEnv(env):
       self.observation_space = gym.spaces.Box(self.filter_observation(obsp.low),
                                               self.filter_observation(obsp.high))
       self.action_space = gym.spaces.Box(-np.ones_like(acsp.high),np.ones_like(acsp.high))
+      self.fea_size=int(fea_size);
+      self.obj_num=int(self.observation_space.shape[0]/self.fea_size);
       def assertEqual(a,b): assert np.all(a == b), "{} != {}".format(a,b)
       assertEqual(self.filter_action(self.action_space.low), acsp.low)
       assertEqual(self.filter_action(self.action_space.high), acsp.high)
@@ -71,15 +73,10 @@ def makeFilteredEnv(env):
       return self.r_sc*reward+self.r_c
 
     def step(self,action):
-
       ac_f = np.clip(self.filter_action(action),self.action_space.low,self.action_space.high)
-
       obs, reward, term, info = env_type.step(self,ac_f) # super function
-
       reward = self.filter_reward(reward);
-
       obs_f = self.filter_observation(obs)
-
       return obs_f, reward, term, info
 
   fenv = FilteredEnv()

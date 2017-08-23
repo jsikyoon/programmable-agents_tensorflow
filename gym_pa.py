@@ -1,5 +1,5 @@
 import filter_env
-from ddpg import *
+from pa import *
 import gc
 gc.enable()
 
@@ -10,8 +10,7 @@ TEST = 10
 
 def main():
     env = filter_env.makeFilteredEnv(gym.make(ENV_NAME))
-    agent = DDPG(env)
-    #env.monitor.start('experiments/' + ENV_NAME,force=True)
+    agent = PA(env)
 
     for episode in range(EPISODES):
         state = env.reset()
@@ -36,7 +35,6 @@ def main():
                         break;
             ave_reward = total_reward/TEST;
             print("episode: "+str(episode)+", Evaluation Average Reward: "+str(ave_reward));
-    #env.monitor.close()
 
 if __name__ == '__main__':
     main()
