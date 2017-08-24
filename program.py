@@ -37,12 +37,11 @@ class Program:
           p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:self.Theta[k]+p-tf.multiply(self.Theta[k],p),lambda:p);
     return p, program_order;
 		
-  def run_target_nets(self,Theta):
+  def run_target_nets(self,Theta,program_order):
     Theta=tf.reshape(Theta,[-1,self.obj_num,9]);
     Theta=tf.transpose(Theta,perm=[0,2,1]);
     Theta=tf.unstack(Theta,9,1);
     p=Theta[0];
-    program_order=self.program_order;
     program_order2=tf.unstack(program_order,self.order_num,0);
     for i in range(self.order_num):
       program_order2[i]=tf.unstack(program_order2[i],3,0);

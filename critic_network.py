@@ -10,6 +10,7 @@ from program import Program
 LEARNING_RATE = 1e-3
 TAU = 0.001
 L2 = 0.01
+order_num=2
 
 class CriticNetwork:
     """docstring for CriticNetwork"""
@@ -20,6 +21,7 @@ class CriticNetwork:
         self.obj_num=obj_num;
         self.fea_size=fea_size;
         self.action_dim=action_dim;
+        self.order_num=order_num;
         # create q network
         self.state_input,\
         self.action_input,\
@@ -30,7 +32,8 @@ class CriticNetwork:
         self.target_state_input,\
         self.target_action_input,\
         self.target_q_value_output,\
-        self.target_update = self.create_target_q_network(state_dim,action_dim,self.net)
+        self.target_update,\
+        self.target_program_order = self.create_target_q_network(state_dim,action_dim,self.net)
 
         self.create_training_method()
 
@@ -82,6 +85,8 @@ class CriticNetwork:
 
     def create_target_q_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim])
+        state_input = tf.placeholder("float",[None,state_dim])
+        program_order = tf.placeholder("float",[self.order_num,3]);
         action_input = tf.placeholder("float",[None,action_dim])
 
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
@@ -94,7 +99,7 @@ class CriticNetwork:
         # run detector
         Theta=self.detector.run_target_nets(state_input,d_net);
         # run program
-        p=self.program.run_target_nets(Theta);
+        p=self.program.run_target_nets(Theta,program_order);
         # run message_passing
         Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
         # get h
@@ -107,35 +112,39 @@ class CriticNetwork:
           h+=p_list[i]*Omega_dot[i];
         # get Q  
         q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
-        return state_input,action_input,q_value_output,target_update
+        return state_input,action_input,q_value_output,target_update,program_order
 
     def update_target(self):
         self.sess.run(self.target_update)
 
-    def train(self,y_batch,state_batch,action_batch):
+    def train(self,y_batch,state_batch,action_batch,program_order):
         self.time_step += 1
         self.sess.run(self.optimizer,feed_dict={
             self.y_input:y_batch,
             self.state_input:state_batch,
-            self.action_input:action_batch
+            self.action_input:action_batch,
+            self.program_order:program_order
             })
 
-    def gradients(self,state_batch,action_batch):
+    def gradients(self,state_batch,action_batch,program_order):
         return self.sess.run(self.action_gradients,feed_dict={
             self.state_input:state_batch,
-            self.action_input:action_batch
+            self.action_input:action_batch,
+            self.program_order:program_order
             })[0]
 
-    def target_q(self,state_batch,action_batch):
+    def target_q(self,state_batch,action_batch,program_order):
         return self.sess.run(self.target_q_value_output,feed_dict={
             self.target_state_input:state_batch,
-            self.target_action_input:action_batch
+            self.target_action_input:action_batch,
+            self.target_program_order:program_order
             })
 
-    def q_value(self,state_batch,action_batch):
+    def q_value(self,state_batch,action_batch,program_order):
         return self.sess.run(self.q_value_output,feed_dict={
             self.state_input:state_batch,
-            self.action_input:action_batch})
+            self.action_input:action_batch,
+            self.program_order:program_order})
 
     # f fan-in size
     def variable(self,shape,f):

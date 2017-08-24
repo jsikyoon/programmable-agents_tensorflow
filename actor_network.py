@@ -9,6 +9,7 @@ from program import Program
 LEARNING_RATE = 1e-4
 TAU = 0.001
 BATCH_SIZE = 64
+order_num=2
 
 class ActorNetwork:
     """docstring for ActorNetwork"""
@@ -18,11 +19,12 @@ class ActorNetwork:
         self.obj_num=obj_num
         self.fea_size=fea_size
         self.action_dim = action_dim
+        self.order_num=order_num;
         # create actor network
         self.state_input,self.action_output,self.net,self.program_order = self.create_network(state_dim,obj_num,fea_size,action_dim)
 
         # create target actor network
-        self.target_state_input,self.target_action_output,self.target_update,self.target_net = self.create_target_network(state_dim,action_dim,self.net)
+        self.target_state_input,self.target_action_output,self.target_update,self.target_net,self.target_program_order = self.create_target_network(state_dim,action_dim,self.net)
 
         # define training rules
         self.create_training_method()
@@ -70,7 +72,8 @@ class ActorNetwork:
         return state_input,action_output,param_list,program_order
 
     def create_target_network(self,state_dim,action_dim,net):
-        state_input = tf.placeholder("float",[None,state_dim])
+        state_input = tf.placeholder("float",[None,state_dim]);
+        program_order=tf.placeholder("float",[self.order_num,3]);
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
         target_update = ema.apply(net)
         target_net = [ema.average(x) for x in net]
@@ -81,7 +84,7 @@ class ActorNetwork:
         # run detector
         Theta=self.detector.run_target_nets(state_input,d_net);
         # run program
-        p=self.program.run_target_nets(Theta);
+        p=self.program.run_target_nets(Theta,program_order);
         # run message_passing
         Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
         # get h
@@ -94,7 +97,7 @@ class ActorNetwork:
           h+=p_list[i]*Omega_dot[i];
         # get a
         action_output=tf.tanh(tf.matmul(tf.tanh(h),a_net[0])+a_net[1]);
-        return state_input,action_output,target_update,target_net
+        return state_input,action_output,target_update,target_net,program_order;
 
     def update_target(self):
         self.sess.run(self.target_update)
@@ -106,20 +109,23 @@ class ActorNetwork:
             self.program_order:program_order
             })
 
-    def actions(self,state_batch):
+    def actions(self,state_batch,program_order):
         return self.sess.run(self.action_output,feed_dict={
-            self.state_input:state_batch
+            self.state_input:state_batch,
+            self.program_order:program_order
             })
 
-    def action(self,state):
+    def action(self,state,program_order):
         return self.sess.run(self.action_output,feed_dict={
-            self.state_input:[state]
+            self.state_input:state,
+            self.program_order:program_order
             })[0]
 
 
-    def target_actions(self,state_batch):
+    def target_actions(self,state_batch,program_order):
         return self.sess.run(self.target_action_output,feed_dict={
-            self.target_state_input:state_batch
+            self.target_state_input:state_batch,
+            self.target_program_order:program_order
             })
 
     # f fan-in size

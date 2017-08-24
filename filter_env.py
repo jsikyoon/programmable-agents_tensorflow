@@ -79,10 +79,11 @@ def makeFilteredEnv(env):
       obs_f = self.filter_observation(obs)
       return obs_f, reward, term, info
     
-    def set_order(self,order):
-      self.order=order;
-      f=open("program_order","w");
-      f.writelines(str(order));
+    def set_order(self,program_order_idx,program_order):
+      self.program_order_idx=program_order_idx;
+      self.program_order=program_order;
+      f=open("program_order_idx","w");
+      f.writelines(str(program_order_idx));
       f.close();
 
 

@@ -44,9 +44,6 @@ class DDPG:
         # Initialize a random process the Ornstein-Uhlenbeck process for action exploration
         self.exploration_noise = OUNoise(self.action_dim)
 
-    def set_program_order(self,program_order):
-        self.program_order=program_order;
-
     def train(self):
         #print "train step",self.time_step
         # Sample a random minibatch of N transitions from replay buffer
@@ -56,14 +53,15 @@ class DDPG:
         reward_batch = np.asarray([data[2] for data in minibatch])
         next_state_batch = np.asarray([data[3] for data in minibatch])
         done_batch = np.asarray([data[4] for data in minibatch])
-        
+        program_order=self.environment.program_order;
+
         # for action_dim = 1
         action_batch = np.resize(action_batch,[BATCH_SIZE,self.action_dim])
 
         # Calculate y_batch
         
-        next_action_batch = self.actor_network.target_actions(next_state_batch)
-        q_value_batch = self.critic_network.target_q(next_state_batch,next_action_batch)
+        next_action_batch = self.actor_network.target_actions(next_state_batch,program_order)
+        q_value_batch = self.critic_network.target_q(next_state_batch,next_action_batch,program_order)
         y_batch = []  
         for i in range(len(minibatch)): 
             if done_batch[i]:
@@ -72,25 +70,25 @@ class DDPG:
                 y_batch.append(reward_batch[i] + GAMMA * q_value_batch[i])
         y_batch = np.resize(y_batch,[BATCH_SIZE,1])
         # Update critic by minimizing the loss L
-        self.critic_network.train(y_batch,state_batch,action_batch)
+        self.critic_network.train(y_batch,state_batch,action_batch,program_order)
 
         # Update the actor policy using the sampled gradient:
-        action_batch_for_gradients = self.actor_network.actions(state_batch)
-        q_gradient_batch = self.critic_network.gradients(state_batch,action_batch_for_gradients)
+        action_batch_for_gradients = self.actor_network.actions(state_batch,program_order)
+        q_gradient_batch = self.critic_network.gradients(state_batch,action_batch_for_gradients,program_order)
 
-        self.actor_network.train(q_gradient_batch,state_batch,self.program_order)
+        self.actor_network.train(q_gradient_batch,state_batch,program_order)
 
         # Update the target networks
         self.actor_network.update_target()
         self.critic_network.update_target()
 
-    def noise_action(self,state):
+    def noise_action(self,state,program_order):
         # Select action a_t according to the current policy and exploration noise
-        action = self.actor_network.action(state)
+        action = self.actor_network.action(state,program_order)
         return action+self.exploration_noise.noise()
 
-    def action(self,state):
-        action = self.actor_network.action(state)
+    def action(self,state,program_order):
+        action = self.actor_network.action(state,program_order)
         return action
 
     def perceive(self,state,action,reward,next_state,done):
