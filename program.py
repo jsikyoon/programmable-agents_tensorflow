@@ -32,9 +32,9 @@ class Program:
     p=tf.multiply(tf.stack([program_order2[0],program_order2[0],program_order2[0],program_order2[0]],1),p_1)+tf.multiply(tf.stack([program_order2[1],program_order2[1],program_order2[1],program_order2[1]],1),p_2)+tf.multiply(tf.stack([program_order2[2],program_order2[2],program_order2[2],program_order2[2]],1),p_3);
     # Currently tf.cond makes problems 
     """
-    program_order2=tf.unstack(program_order,self.order_num,0);
+    program_order2=tf.unstack(self.program_order,self.order_num,1);
     for i in range(self.order_num):
-      program_order2[i]=tf.unstack(program_order2[i],3,0);
+      program_order2[i]=tf.unstack(program_order2[i],3,1);
     for i in range(self.order_num):
       for k in range(9):
         for l in range(k+1,9):
@@ -63,18 +63,18 @@ class Program:
     p=tf.multiply(tf.stack([program_order2[0],program_order2[0],program_order2[0],program_order2[0]],1),p_1)+tf.multiply(tf.stack([program_order2[1],program_order2[1],program_order2[1],program_order2[1]],1),p_2)+tf.multiply(tf.stack([program_order2[2],program_order2[2],program_order2[2],program_order2[2]],1),p_3);
     # Currently tf.cond makes problems 
     """
-    program_order2=tf.unstack(program_order,self.order_num,0);
+    program_order2=tf.unstack(program_order,self.order_num,1);
     for i in range(self.order_num):
-      program_order2[i]=tf.unstack(program_order2[i],3,0);
+      program_order2[i]=tf.unstack(program_order2[i],3,1);
     for i in range(self.order_num):
       for k in range(9):
         for l in range(k+1,9):
           # not=1, and=2, or=3
           p=tf.cond(tf.equal(program_order2[i][0],1)&tf.equal(program_order2[i][1],k),lambda:1-Theta[k],lambda:p);
           p=tf.cond(tf.equal(program_order2[i][0],1)&tf.equal(program_order2[i][1],-1),lambda:1-p,lambda:p);
-          p=tf.cond(tf.equal(program_order2[i][0],2)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:tf.multiply(Theta[k],self.Theta[l]),lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],2)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:tf.multiply(Theta[k],Theta[l]),lambda:p);
           p=tf.cond(tf.equal(program_order2[i][0],2)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],-1),lambda:tf.multiply(Theta[k],p),lambda:p);
-          p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:Theta[k]+Theta[l]-tf.multiply(self.Theta[k],self.Theta[l]),lambda:p);
+          p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:Theta[k]+Theta[l]-tf.multiply(Theta[k],Theta[l]),lambda:p);
           p=tf.cond(tf.equal(program_order2[i][0],3)&tf.equal(program_order2[i][1],k)&tf.equal(program_order2[i][2],l),lambda:Theta[k]+p-tf.multiply(Theta[k],p),lambda:p);
     """
     return p;

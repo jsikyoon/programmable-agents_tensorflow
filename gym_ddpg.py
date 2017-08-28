@@ -20,8 +20,9 @@ def main():
                  [[0,1,0]],
                  [[0,0,1]]];
     for episode in range(EPISODES):
-        program_order_idx=np.random.randint(3);
-        env.set_order(program_order_idx,order_list2[program_order_idx]);
+        #program_order_idx=np.random.randint(3);
+        program_order_idx=0;
+        env.set_order(program_order_idx,order_list[program_order_idx]);
         state = env.reset();
         # Train
         for step in range(env.spec.timestep_limit):
@@ -35,8 +36,9 @@ def main():
         if(episode % 100 == 0 and episode > 100):
             total_reward=0;
             for i in range(TEST):
-                program_order_idx=np.random.randint(3);
-                env.set_order(program_order_idx,order_list2[program_order_idx]);
+                #program_order_idx=np.random.randint(3);
+                program_order_idx=0;
+                env.set_order(program_order_idx,order_list[program_order_idx]);
                 state = env.reset();
                 for j in range(env.spec.timestep_limit):
                     action = agent.action(state,env.program_order);
