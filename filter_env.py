@@ -26,6 +26,7 @@ def makeFilteredEnv(env):
       else:
         self.o_c = np.zeros_like(obsp.high)
         self.o_sc = np.ones_like(obsp.high)
+      self.obj_num=int(len(self.o_sc)/fea_size);
       
       # Action space
       h = acsp.high
@@ -39,16 +40,11 @@ def makeFilteredEnv(env):
       self.r_c = 0.
 
       # Special cases
-      if (self.spec.id == "Reacher-v1"):
-        print("is Reacher!!!");
-        self.o_sc[6] = 40.
-        self.o_sc[7] = 20.
-        self.r_sc = 200.
-        self.r_c = 0.
       if (self.spec.id == "PA-v1"):
         print("is Programmable Agent!!!");
-        self.o_sc[10] = 40.
-        self.o_sc[11] = 20.
+        for i in range(self.obj_num):
+          self.o_sc[i*fea_size+16] = 40.
+          self.o_sc[i*fea_size+17] = 20.
         self.r_sc = 200.
         self.r_c = 0.
       

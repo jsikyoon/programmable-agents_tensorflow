@@ -16,15 +16,18 @@ def main():
     order_list=[[[1,7,0],[2,8,-1]], #target1
                 [[1,6,2],[2,8,-1]], #target2
                 [[1,5,1],[2,8,-1]]];#target3
+    order_list2=[[[1,0,0]],
+                 [[0,1,0]],
+                 [[0,0,1]]];
     for episode in range(EPISODES):
         program_order_idx=np.random.randint(3);
-        env.set_order(program_order_idx,order_list[program_order_idx]);
+        env.set_order(program_order_idx,order_list2[program_order_idx]);
         state = env.reset();
         # Train
         for step in range(env.spec.timestep_limit):
             action = agent.noise_action(state,env.program_order)
             next_state,reward,done,_ = env.step(action)
-            agent.perceive(state,action,reward,next_state,done)
+            agent.perceive(state,action,reward,next_state,done,env.program_order)
             state = next_state
             if done:
                 break
@@ -33,10 +36,10 @@ def main():
             total_reward=0;
             for i in range(TEST):
                 program_order_idx=np.random.randint(3);
-                env.set_order(program_order_idx,order_list[program_order_idx]);
+                env.set_order(program_order_idx,order_list2[program_order_idx]);
                 state = env.reset();
                 for j in range(env.spec.timestep_limit):
-                    action = agent.action(state);
+                    action = agent.action(state,env.program_order);
                     state,reward,done,_ = env.step(action);
                     total_reward += reward;
                     if done:

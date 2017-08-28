@@ -26,7 +26,8 @@ class CriticNetwork:
         self.state_input,\
         self.action_input,\
         self.q_value_output,\
-        self.net = self.create_q_network(state_dim,action_dim)
+        self.net,\
+        self.program_order= self.create_q_network(state_dim,action_dim)
 
         # create target q network (the same structure with q network)
         self.target_state_input,\
@@ -51,12 +52,13 @@ class CriticNetwork:
         self.action_gradients = tf.gradients(self.q_value_output,self.action_input)
 
     def create_q_network(self,state_dim,action_dim):
+        state_input = tf.placeholder("float",[None,state_dim])
+        program_order = tf.placeholder("float",[None,3]);
         # Detector
-        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,"critic");
-        state_input=self.detector.state_input;
+        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,state_input,"critic");
         d_params=self.detector.net;
         # Program
-        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,"critic");
+        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,program_order,"critic");
         p=self.program.p;
         # Message Passing
         self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,"critic");
@@ -69,7 +71,7 @@ class CriticNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=p_list[i]*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
         # get Q
         action_input = tf.placeholder("float",[None,action_dim]);
         with tf.variable_scope('critic_nets'):
@@ -81,12 +83,12 @@ class CriticNetwork:
         c_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic_nets');
         # param list
         param_list=d_params+m_params+c_params;
-        return state_input,action_input,q_value_output,param_list;
+        return state_input,action_input,q_value_output,param_list,program_order;
 
     def create_target_q_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim])
         state_input = tf.placeholder("float",[None,state_dim])
-        program_order = tf.placeholder("float",[self.order_num,3]);
+        program_order = tf.placeholder("float",[None,3]);
         action_input = tf.placeholder("float",[None,action_dim])
 
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
@@ -109,7 +111,7 @@ class CriticNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=p_list[i]*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
         # get Q  
         q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
         return state_input,action_input,q_value_output,target_update,program_order

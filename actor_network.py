@@ -40,13 +40,13 @@ class ActorNetwork:
         self.optimizer = tf.train.AdamOptimizer(LEARNING_RATE).apply_gradients(zip(self.parameters_gradients,self.net))
 
     def create_network(self,state_dim,obj_num,fea_size,action_dim):
+        state_input = tf.placeholder("float",[None,state_dim]);
+        program_order=tf.placeholder("float",[None,3]);
         # Detector
-        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,"actor");
-        state_input=self.detector.state_input;
+        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,state_input,"actor");
         d_params=self.detector.net;
         # Program
-        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,"actor");
-        program_order=self.program.program_order;
+        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,program_order,"actor");
         p=self.program.p;
         # Message Passing
         self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,"actor");
@@ -59,7 +59,7 @@ class ActorNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=p_list[i]*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
         # get a
         with tf.variable_scope('actor_nets'):
           w=tf.get_variable('w',shape=[self.fea_size,self.action_dim]);
@@ -73,7 +73,7 @@ class ActorNetwork:
 
     def create_target_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim]);
-        program_order=tf.placeholder("float",[self.order_num,3]);
+        program_order=tf.placeholder("float",[None,3]);
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
         target_update = ema.apply(net)
         target_net = [ema.average(x) for x in net]
@@ -94,7 +94,7 @@ class ActorNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=p_list[i]*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
         # get a
         action_output=tf.tanh(tf.matmul(tf.tanh(h),a_net[0])+a_net[1]);
         return state_input,action_output,target_update,target_net,program_order;

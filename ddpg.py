@@ -14,9 +14,13 @@ from replay_buffer import ReplayBuffer
 
 # Hyper Parameters:
 
-REPLAY_BUFFER_SIZE = 1000000
-REPLAY_START_SIZE  = 10000
-BATCH_SIZE = 64
+#REPLAY_BUFFER_SIZE = 1000000
+#REPLAY_START_SIZE  = 10000
+#BATCH_SIZE = 64
+#GAMMA = 0.99
+REPLAY_BUFFER_SIZE = 100
+REPLAY_START_SIZE  = 10
+BATCH_SIZE = 5
 GAMMA = 0.99
 
 
@@ -32,8 +36,6 @@ class DDPG:
         self.obj_num=env.obj_num;
         self.fea_size=env.fea_size;
         self.sess = tf.InteractiveSession();
-
-        self.sess = tf.InteractiveSession()
 
         self.actor_network = ActorNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
         self.critic_network = CriticNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
@@ -53,13 +55,15 @@ class DDPG:
         reward_batch = np.asarray([data[2] for data in minibatch])
         next_state_batch = np.asarray([data[3] for data in minibatch])
         done_batch = np.asarray([data[4] for data in minibatch])
-        program_order=self.environment.program_order;
+        program_order = np.asarray([data[5] for data in minibatch])
 
         # for action_dim = 1
-        action_batch = np.resize(action_batch,[BATCH_SIZE,self.action_dim])
+        action_batch = np.resize(action_batch,[BATCH_SIZE,self.action_dim]);
+        state_batch = np.resize(state_batch,[BATCH_SIZE,self.state_dim]);
+        next_state_batch = np.resize(next_state_batch,[BATCH_SIZE,self.state_dim]);
+        program_order = np.resize(program_order,[BATCH_SIZE,3]);
 
         # Calculate y_batch
-        
         next_action_batch = self.actor_network.target_actions(next_state_batch,program_order)
         q_value_batch = self.critic_network.target_q(next_state_batch,next_action_batch,program_order)
         y_batch = []  
@@ -91,9 +95,9 @@ class DDPG:
         action = self.actor_network.action(state,program_order)
         return action
 
-    def perceive(self,state,action,reward,next_state,done):
+    def perceive(self,state,action,reward,next_state,done,program_order):
         # Store transition (s_t,a_t,r_t,s_{t+1}) in replay buffer
-        self.replay_buffer.add(state,action,reward,next_state,done)
+        self.replay_buffer.add(state,action,reward,next_state,done,program_order)
 
         # Store transitions to replay start size then start training
         if self.replay_buffer.count() >  REPLAY_START_SIZE:
