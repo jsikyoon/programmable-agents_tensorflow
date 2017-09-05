@@ -16,13 +16,13 @@ def main():
     order_list=[[[1,7,0],[2,8,-1]], #target1
                 [[1,6,2],[2,8,-1]], #target2
                 [[1,5,1],[2,8,-1]]];#target3
-    order_list2=[[[1,0,0]],
-                 [[0,1,0]],
-                 [[0,0,1]]];
+    order_list2=[[1,0,0],
+                 [0,1,0],
+                 [0,0,1]];
     for episode in range(EPISODES):
         #program_order_idx=np.random.randint(3);
         program_order_idx=0;
-        env.set_order(program_order_idx,order_list[program_order_idx]);
+        env.set_order(program_order_idx,order_list2[program_order_idx]);
         state = env.reset();
         # Train
         for step in range(env.spec.timestep_limit):
@@ -38,7 +38,7 @@ def main():
             for i in range(TEST):
                 #program_order_idx=np.random.randint(3);
                 program_order_idx=0;
-                env.set_order(program_order_idx,order_list[program_order_idx]);
+                env.set_order(program_order_idx,order_list2[program_order_idx]);
                 state = env.reset();
                 for j in range(env.spec.timestep_limit):
                     action = agent.action(state,env.program_order);

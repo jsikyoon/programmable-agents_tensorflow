@@ -7,7 +7,7 @@ from message_passing import Message_passing
 from program import Program
 
 # Parameters
-LEARNING_RATE = 1e-6
+LEARNING_RATE = 1e-3
 TAU = 0.001
 L2 = 0.01
 order_num=2
@@ -86,7 +86,6 @@ class CriticNetwork:
         return state_input,action_input,q_value_output,param_list,program_order;
 
     def create_target_q_network(self,state_dim,action_dim,net):
-        state_input = tf.placeholder("float",[None,state_dim])
         state_input = tf.placeholder("float",[None,state_dim])
         program_order = tf.placeholder("float",[None,3]);
         action_input = tf.placeholder("float",[None,action_dim])

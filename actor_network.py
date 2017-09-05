@@ -6,7 +6,7 @@ from message_passing import Message_passing
 from program import Program
 
 # Hyper Parameters
-LEARNING_RATE = 1e-7
+LEARNING_RATE = 1e-3
 TAU = 0.001
 BATCH_SIZE = 64
 order_num=2
@@ -85,6 +85,7 @@ class ActorNetwork:
         Theta=self.detector.run_target_nets(state_input,d_net);
         # run program
         p=self.program.run_target_nets(Theta,program_order);
+        self.target_p=p;
         # run message_passing
         Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
         # get h
@@ -117,8 +118,8 @@ class ActorNetwork:
 
     def action(self,state,program_order):
         return self.sess.run(self.action_output,feed_dict={
-            self.state_input:state,
-            self.program_order:program_order
+            self.state_input:[state],
+            self.program_order:[program_order]
             })[0]
 
 

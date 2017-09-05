@@ -14,13 +14,11 @@ from replay_buffer import ReplayBuffer
 
 # Hyper Parameters:
 
-#REPLAY_BUFFER_SIZE = 1000000
-#REPLAY_START_SIZE  = 10000
-#BATCH_SIZE = 64
-#GAMMA = 0.99
-REPLAY_BUFFER_SIZE = 100
-REPLAY_START_SIZE  = 10
-BATCH_SIZE = 5
+#REPLAY_BUFFER_SIZE = 1000
+#REPLAY_START_SIZE  = 1000
+REPLAY_BUFFER_SIZE = 1000000
+REPLAY_START_SIZE  = 10000
+BATCH_SIZE = 64
 GAMMA = 0.99
 
 
@@ -39,7 +37,7 @@ class DDPG:
 
         self.actor_network = ActorNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
         self.critic_network = CriticNetwork(self.sess,self.state_dim,self.obj_num,self.fea_size,self.action_dim)
-        
+       
         # initialize replay buffer
         self.replay_buffer = ReplayBuffer(REPLAY_BUFFER_SIZE)
 
@@ -59,9 +57,6 @@ class DDPG:
 
         # for action_dim = 1
         action_batch = np.resize(action_batch,[BATCH_SIZE,self.action_dim]);
-        state_batch = np.resize(state_batch,[BATCH_SIZE,self.state_dim]);
-        next_state_batch = np.resize(next_state_batch,[BATCH_SIZE,self.state_dim]);
-        program_order = np.resize(program_order,[BATCH_SIZE,3]);
 
         # Calculate y_batch
         next_action_batch = self.actor_network.target_actions(next_state_batch,program_order)
