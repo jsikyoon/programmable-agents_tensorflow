@@ -7,7 +7,7 @@ from message_passing import Message_passing
 from program import Program
 
 # Parameters
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-4
 TAU = 0.001
 L2 = 0.01
 order_num=2

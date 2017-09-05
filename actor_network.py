@@ -6,7 +6,7 @@ from message_passing import Message_passing
 from program import Program
 
 # Hyper Parameters
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-4
 TAU = 0.001
 BATCH_SIZE = 64
 order_num=2

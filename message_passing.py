@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 # Hyper Parameters
-HIDDEN_SIZE = 150;
+HIDDEN_SIZE = 64;
 CONTEXT_SIZE = 64;
 QUERY_SIZE = 64;
 eps=1e-3;
@@ -92,12 +92,15 @@ class Message_passing:
                         alpha[i,j]=alpha_hat[i,j]/(np.sum(alpha_hat[i,:]));
                 # new state from message_passing
                 state_output=np.zeros(self.obj_num,dtype=object);
-                for i in range(self.obj_num):
-                  state_output[i]=f_out[i];
-                  for j in range(self.obj_num):
+                #for i in range(self.obj_num):
+                for i in [0,3]:
+                  #state_output[i]=f_out[i];
+                  #for j in range(self.obj_num):
+                  for j in [0,3]:
                     if(i!=j):
-                      state_output[i]+=r_out[i,j];
                       #state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
+                      state_output[i]+=r_out[i,j];
+                state_output[1]=state_input2[1];state_output[2]=state_input2[2];
                 state_output=tf.stack(list(state_output),1);
                 state_output=tf.reshape(state_output,[-1,self.state_dim]);
                 
@@ -130,6 +133,7 @@ class Message_passing:
                       r_in[i,j]=tf.concat([state_input2[i],state_input2[j]],1);
                       #r_in[i,j]=state_input2[i]-state_input2[j];
                       layer1=tf.nn.relu(tf.matmul(r_in[i,j],params_list[idx])+params_list[idx+1]);
+                      #layer2=tf.nn.relu(tf.matmul(layer1,params_list[idx+2])+params_list[idx+3]);
                       r_out[i,j]=tf.nn.relu(tf.matmul(layer1,params_list[idx+2])+params_list[idx+3]);
                       #r_out[i,j]=tf.tanh(tf.matmul(layer1,params_list[idx+2])+params_list[idx+3]);
                 idx+=4;
@@ -155,12 +159,15 @@ class Message_passing:
                       alpha[i,j]=alpha_hat[i,j]/np.sum(alpha_hat[i,:]);
                 # new state from message_passing
                 state_output=np.zeros(self.obj_num,dtype=object);
-                for i in range(self.obj_num):
-                  state_output[i]=f_out[i];
-                  for j in range(self.obj_num):
+                #for i in range(self.obj_num):
+                for i in [0,3]:
+                  #state_output[i]=f_out[i];
+                  #for j in range(self.obj_num):
+                  for j in [0,3]:
                     if(i!=j):
-                      state_output[i]+=r_out[i,j];
                       #state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
+                      state_output[i]+=r_out[i,j];
+                state_output[1]=state_input2[1];state_output[2]=state_input2[2];
                 state_output=tf.stack(list(state_output),1);
                 state_output=tf.reshape(state_output,[-1,self.state_dim]);
                 return state_output;
