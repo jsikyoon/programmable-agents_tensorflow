@@ -1,9 +1,0 @@
-Fri Sep  1 10:08:46 2017
-ERROR: Expired activation key
-
-Fri Sep  1 10:08:55 2017
-ERROR: Expired activation key
-
-Fri Sep  1 10:30:21 2017
-ERROR: Expired activation key
-
