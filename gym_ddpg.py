@@ -18,8 +18,8 @@ def main():
     tr_reward=0;ts_reward=0;
     for episode in range(EPISODES):
         # training with blue cube, red sphere and blue sphere
-        #program_order_idx=np.random.randint(1,4);
-        program_order_idx=0;
+        program_order_idx=np.random.randint(1,4);
+        #program_order_idx=0;
         env.set_order(program_order_idx,order_list[program_order_idx]);
         state = env.reset();
         # Train
