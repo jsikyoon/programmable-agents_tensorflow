@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-fea_size=20;
+fea_size=17;
 
 def makeFilteredEnv(env):
   """ crate a new environment class with actions and states normalized to [-1,1] """
@@ -43,8 +43,8 @@ def makeFilteredEnv(env):
       if (self.spec.id == "PA-v1"):
         print("is Programmable Agent!!!");
         for i in range(self.obj_num):
-          self.o_sc[i*fea_size+18] = 40.
-          self.o_sc[i*fea_size+19] = 20.
+          self.o_sc[i*fea_size+15] = 40.
+          self.o_sc[i*fea_size+16] = 20.
         self.r_sc = 200.
         self.r_c = 0.
       
@@ -68,9 +68,18 @@ def makeFilteredEnv(env):
       ''' has to be applied manually otherwise it makes the reward_threshold invalid '''
       return self.r_sc*reward+self.r_c
 
+    def get_reward(self,obs,ac_f):
+      obs=np.reshape(obs,[(self.obj_num),fea_size]);
+      vec=obs[self.program_order_idx,:3];
+      reward_dist = -np.linalg.norm(vec);
+      reward_ctrl = -np.square(ac_f).sum();
+      return reward_dist+reward_ctrl;
+      
     def step(self,action):
       ac_f = np.clip(self.filter_action(action),self.action_space.low,self.action_space.high)
       obs, reward, term, info = env_type.step(self,ac_f) # super function
+      # reward for each program
+      reward = self.get_reward(obs,ac_f);
       reward = self.filter_reward(reward);
       obs_f = self.filter_observation(obs)
       return obs_f, reward, term, info
@@ -78,10 +87,6 @@ def makeFilteredEnv(env):
     def set_order(self,program_order_idx,program_order):
       self.program_order_idx=program_order_idx;
       self.program_order=program_order;
-      #f=open("program_order_idx","w");
-      #f.writelines(str(program_order_idx));
-      #f.close();
-
 
   fenv = FilteredEnv()
 

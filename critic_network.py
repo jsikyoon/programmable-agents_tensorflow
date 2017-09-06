@@ -53,7 +53,7 @@ class CriticNetwork:
 
     def create_q_network(self,state_dim,action_dim):
         state_input = tf.placeholder("float",[None,state_dim])
-        program_order = tf.placeholder("float",[None,3]);
+        program_order = tf.placeholder("float",[None,(self.obj_num-1)]);
         # Detector
         self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,state_input,"critic");
         d_params=self.detector.net;
@@ -72,18 +72,12 @@ class CriticNetwork:
         h=0;
         for i in range(self.obj_num):
           h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
-          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
-        #Omega_dot=tf.stack(Omega_dot,2);
-        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get Q
         action_input = tf.placeholder("float",[None,action_dim]);
         with tf.variable_scope('critic_nets'):
           w1=tf.get_variable('w1',shape=[self.action_dim,self.fea_size]);
           b1=tf.get_variable('b1',shape=[self.fea_size]);
           w2=tf.get_variable('w2',shape=[self.fea_size,1]);
-          #w1=tf.get_variable('w1',shape=[self.action_dim,self.state_dim]);
-          #b1=tf.get_variable('b1',shape=[self.state_dim]);
-          #w2=tf.get_variable('w2',shape=[self.state_dim,1]);
           b2=tf.get_variable('b2',shape=[1]);
           q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,w1)+b1),w2)+b2;
           #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,w1)+b1),w2)+b2;
@@ -94,7 +88,7 @@ class CriticNetwork:
 
     def create_target_q_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim])
-        program_order = tf.placeholder("float",[None,3]);
+        program_order = tf.placeholder("float",[None,(self.obj_num-1)]);
         action_input = tf.placeholder("float",[None,action_dim])
 
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
@@ -118,9 +112,6 @@ class CriticNetwork:
         h=0;
         for i in range(self.obj_num):
           h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
-          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
-        #Omega_dot=tf.stack(Omega_dot,2);
-        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get Q  
         q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
         #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];

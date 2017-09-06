@@ -41,7 +41,7 @@ class ActorNetwork:
 
     def create_network(self,state_dim,obj_num,fea_size,action_dim):
         state_input = tf.placeholder("float",[None,state_dim]);
-        program_order=tf.placeholder("float",[None,3]);
+        program_order=tf.placeholder("float",[None,(self.obj_num-1)]);
         # Detector
         self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,state_input,"actor");
         d_params=self.detector.net;
@@ -60,13 +60,9 @@ class ActorNetwork:
         h=0;
         for i in range(self.obj_num):
           h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
-          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
-        #Omega_dot=tf.stack(Omega_dot,2);
-        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get a
         with tf.variable_scope('actor_nets'):
           w=tf.get_variable('w',shape=[self.fea_size,self.action_dim]);
-          #w=tf.get_variable('w',shape=[self.state_dim,self.action_dim]);
           b=tf.get_variable('b',shape=[self.action_dim]);
           action_output=tf.tanh(tf.matmul(h,w)+b);
           #action_output=tf.tanh(tf.matmul(tf.tanh(h),w)+b);
@@ -78,7 +74,7 @@ class ActorNetwork:
 
     def create_target_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim]);
-        program_order=tf.placeholder("float",[None,3]);
+        program_order=tf.placeholder("float",[None,(self.obj_num-1)]);
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
         target_update = ema.apply(net)
         target_net = [ema.average(x) for x in net]
@@ -101,9 +97,6 @@ class ActorNetwork:
         h=0;
         for i in range(self.obj_num):
           h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
-          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
-        #Omega_dot=tf.stack(Omega_dot,2);
-        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get a
         action_output=tf.tanh(tf.matmul(h,a_net[0])+a_net[1]);
         #action_output=tf.tanh(tf.matmul(tf.tanh(h),a_net[0])+a_net[1]);

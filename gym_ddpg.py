@@ -11,43 +11,43 @@ def main():
     env = filter_env.makeFilteredEnv(gym.make(ENV_NAME))
     agent = DDPG(env)
 
-    # command: 0-not, 1-and, 2-or
-    # col_shape: 0-red, 1-blue, 2-green, 3-A, 4-B, 5-box, 6-cylinder, 7-sphere, 8-hand
-    order_list=[[[1,7,0],[2,8,-1]], #target1
-                [[1,6,2],[2,8,-1]], #target2
-                [[1,5,1],[2,8,-1]]];#target3
-    order_list2=[[1,0,0],
-                 [0,1,0],
-                 [0,0,1]];
+    order_list=[[1,0,0,0],
+                [0,1,0,0],
+                [0,0,1,0],
+                [0,0,0,1]];
+    tr_reward=0;ts_reward=0;
     for episode in range(EPISODES):
-        #program_order_idx=np.random.randint(3);
+        # training with blue cube, red sphere and blue sphere
+        #program_order_idx=np.random.randint(1,4);
         program_order_idx=0;
-        env.set_order(program_order_idx,order_list2[program_order_idx]);
+        env.set_order(program_order_idx,order_list[program_order_idx]);
         state = env.reset();
         # Train
         for step in range(env.spec.timestep_limit):
             action = agent.noise_action(state,env.program_order)
             next_state,reward,done,_ = env.step(action)
+            tr_reward+=reward;
             agent.perceive(state,action,reward,next_state,done,env.program_order)
             state = next_state
             if done:
                 break
         # Testing:
         if(episode % 100 == 0 and episode > 100):
-            total_reward=0;
             for i in range(TEST):
-                #program_order_idx=np.random.randint(3);
+                # testing with red cube
                 program_order_idx=0;
-                env.set_order(program_order_idx,order_list2[program_order_idx]);
+                env.set_order(program_order_idx,order_list[program_order_idx]);
                 state = env.reset();
                 for j in range(env.spec.timestep_limit):
                     action = agent.action(state,env.program_order);
                     state,reward,done,_ = env.step(action);
-                    total_reward += reward;
+                    ts_reward += reward;
                     if done:
                         break;
-            ave_reward = total_reward/TEST;
-            print("episode: "+str(episode)+", Evaluation Average Reward: "+str(ave_reward));
+            ave_tr_reward = tr_reward/100;
+            ave_ts_reward = ts_reward/TEST;
+            tr_reward=0;ts_reward=0;
+            print("episode: "+str(episode)+", Training Average Reward: "+str(ave_tr_reward)+", Evaluation Average Reward: "+str(ave_ts_reward));
 
 if __name__ == '__main__':
     main()

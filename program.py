@@ -18,18 +18,21 @@ class Program:
     self.p = self.compile_order();
 
   def compile_order(self):
-    self.Theta=tf.reshape(self.Theta,[-1,self.obj_num,9]);
+    self.Theta=tf.reshape(self.Theta,[-1,self.obj_num,6]);
     self.Theta=tf.transpose(self.Theta,perm=[0,2,1]);
-    self.Theta=tf.unstack(self.Theta,9,1);
-    # temporaly ordering
-    p_1=tf.multiply(self.Theta[2],self.Theta[4]);
-    p_1=p_1+self.Theta[3];
-    p_2=tf.multiply(self.Theta[6],self.Theta[1]);
-    p_2=p_2+self.Theta[3];
-    p_3=tf.multiply(self.Theta[5],self.Theta[0]);
-    p_3=p_3+self.Theta[3];
-    program_order2=tf.unstack(self.program_order,3,1);
-    p=tf.multiply(tf.stack([program_order2[0],program_order2[0],program_order2[0],program_order2[0]],1),p_1)+tf.multiply(tf.stack([program_order2[1],program_order2[1],program_order2[1],program_order2[1]],1),p_2)+tf.multiply(tf.stack([program_order2[2],program_order2[2],program_order2[2],program_order2[2]],1),p_3);
+    self.Theta=tf.unstack(self.Theta,6,1);
+    # temporary ordering
+    p_1=tf.multiply(self.Theta[0],self.Theta[3]);
+    p_1=p_1+self.Theta[5];
+    p_2=tf.multiply(self.Theta[1],self.Theta[3]);
+    p_2=p_2+self.Theta[5];
+    p_3=tf.multiply(self.Theta[0],self.Theta[4]);
+    p_3=p_3+self.Theta[5];
+    p_4=tf.multiply(self.Theta[1],self.Theta[4]);
+    p_4=p_4+self.Theta[5];
+    program_order2=tf.unstack(self.program_order,(self.obj_num-1),1);
+    p=tf.multiply(tf.stack([program_order2[0]]*(self.obj_num),1),p_1)+tf.multiply(tf.stack([program_order2[1]]*(self.obj_num),1),p_2)+tf.multiply(tf.stack([program_order2[2]]*(self.obj_num),1),p_3)+tf.multiply(tf.stack([program_order2[3]]*(self.obj_num),1),p_4);
+    
     # Currently tf.cond makes problems 
     """
     program_order2=tf.unstack(self.program_order,self.order_num,1);
@@ -49,18 +52,22 @@ class Program:
     return p;
 		
   def run_target_nets(self,Theta,program_order):
-    Theta=tf.reshape(Theta,[-1,self.obj_num,9]);
+    Theta=tf.reshape(Theta,[-1,self.obj_num,6]);
     Theta=tf.transpose(Theta,perm=[0,2,1]);
-    Theta=tf.unstack(Theta,9,1);
-    # temporaly ordering
-    p_1=tf.multiply(Theta[2],Theta[4]);
-    p_1=p_1+Theta[3];
-    p_2=tf.multiply(Theta[6],Theta[1]);
-    p_2=p_2+Theta[3];
-    p_3=tf.multiply(Theta[5],Theta[0]);
-    p_3=p_3+Theta[3];
-    program_order2=tf.unstack(program_order,3,1);
-    p=tf.multiply(tf.stack([program_order2[0],program_order2[0],program_order2[0],program_order2[0]],1),p_1)+tf.multiply(tf.stack([program_order2[1],program_order2[1],program_order2[1],program_order2[1]],1),p_2)+tf.multiply(tf.stack([program_order2[2],program_order2[2],program_order2[2],program_order2[2]],1),p_3);
+    Theta=tf.unstack(Theta,6,1);
+    # temporary ordering
+    p_1=tf.multiply(Theta[0],Theta[3]);
+    p_1=p_1+Theta[5];
+    p_2=tf.multiply(Theta[1],Theta[3]);
+    p_2=p_2+Theta[5];
+    p_3=tf.multiply(Theta[0],Theta[4]);
+    p_3=p_3+Theta[5];
+    p_4=tf.multiply(Theta[1],Theta[4]);
+    p_4=p_4+Theta[5];
+    program_order2=tf.unstack(program_order,(self.obj_num-1),1);
+    p=tf.multiply(tf.stack([program_order2[0]]*(self.obj_num),1),p_1)+tf.multiply(tf.stack([program_order2[1]]*(self.obj_num),1),p_2)+tf.multiply(tf.stack([program_order2[2]]*(self.obj_num),1),p_3)+tf.multiply(tf.stack([program_order2[3]]*(self.obj_num),1),p_4);
+    
+    # Currently tf.cond makes problems 
     """
     # Currently tf.cond makes problems 
     program_order2=tf.unstack(program_order,self.order_num,1);
