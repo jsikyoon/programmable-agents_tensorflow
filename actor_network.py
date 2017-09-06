@@ -6,7 +6,7 @@ from message_passing import Message_passing
 from program import Program
 
 # Hyper Parameters
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-3
 TAU = 0.001
 BATCH_SIZE = 64
 order_num=2
@@ -59,12 +59,17 @@ class ActorNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+        #Omega_dot=tf.stack(Omega_dot,2);
+        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get a
         with tf.variable_scope('actor_nets'):
           w=tf.get_variable('w',shape=[self.fea_size,self.action_dim]);
+          #w=tf.get_variable('w',shape=[self.state_dim,self.action_dim]);
           b=tf.get_variable('b',shape=[self.action_dim]);
-          action_output=tf.tanh(tf.matmul(tf.tanh(h),w)+b);
+          action_output=tf.tanh(tf.matmul(h,w)+b);
+          #action_output=tf.tanh(tf.matmul(tf.tanh(h),w)+b);
         # param list 
         a_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='actor_nets');
         param_list=d_params+m_params+a_params;
@@ -95,9 +100,13 @@ class ActorNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+        #Omega_dot=tf.stack(Omega_dot,2);
+        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get a
-        action_output=tf.tanh(tf.matmul(tf.tanh(h),a_net[0])+a_net[1]);
+        action_output=tf.tanh(tf.matmul(h,a_net[0])+a_net[1]);
+        #action_output=tf.tanh(tf.matmul(tf.tanh(h),a_net[0])+a_net[1]);
         return state_input,action_output,target_update,target_net,program_order;
 
     def update_target(self):

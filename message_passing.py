@@ -92,15 +92,11 @@ class Message_passing:
                         alpha[i,j]=alpha_hat[i,j]/(np.sum(alpha_hat[i,:]));
                 # new state from message_passing
                 state_output=np.zeros(self.obj_num,dtype=object);
-                #for i in range(self.obj_num):
-                for i in [0,3]:
-                  #state_output[i]=f_out[i];
-                  #for j in range(self.obj_num):
-                  for j in [0,3]:
+                for i in range(self.obj_num):
+                  state_output[i]=f_out[i];
+                  for j in range(self.obj_num):
                     if(i!=j):
-                      #state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
-                      state_output[i]+=r_out[i,j];
-                state_output[1]=state_input2[1];state_output[2]=state_input2[2];
+                      state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
                 state_output=tf.stack(list(state_output),1);
                 state_output=tf.reshape(state_output,[-1,self.state_dim]);
                 
@@ -159,15 +155,11 @@ class Message_passing:
                       alpha[i,j]=alpha_hat[i,j]/np.sum(alpha_hat[i,:]);
                 # new state from message_passing
                 state_output=np.zeros(self.obj_num,dtype=object);
-                #for i in range(self.obj_num):
-                for i in [0,3]:
-                  #state_output[i]=f_out[i];
-                  #for j in range(self.obj_num):
-                  for j in [0,3]:
+                for i in range(self.obj_num):
+                  state_output[i]=f_out[i];
+                  for j in range(self.obj_num):
                     if(i!=j):
-                      #state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
-                      state_output[i]+=r_out[i,j];
-                state_output[1]=state_input2[1];state_output[2]=state_input2[2];
+                      state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
                 state_output=tf.stack(list(state_output),1);
                 state_output=tf.reshape(state_output,[-1,self.state_dim]);
                 return state_output;

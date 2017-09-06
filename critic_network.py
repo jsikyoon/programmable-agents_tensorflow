@@ -7,7 +7,7 @@ from message_passing import Message_passing
 from program import Program
 
 # Parameters
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-3
 TAU = 0.001
 L2 = 0.01
 order_num=2
@@ -71,15 +71,22 @@ class CriticNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+        #Omega_dot=tf.stack(Omega_dot,2);
+        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get Q
         action_input = tf.placeholder("float",[None,action_dim]);
         with tf.variable_scope('critic_nets'):
           w1=tf.get_variable('w1',shape=[self.action_dim,self.fea_size]);
           b1=tf.get_variable('b1',shape=[self.fea_size]);
           w2=tf.get_variable('w2',shape=[self.fea_size,1]);
+          #w1=tf.get_variable('w1',shape=[self.action_dim,self.state_dim]);
+          #b1=tf.get_variable('b1',shape=[self.state_dim]);
+          #w2=tf.get_variable('w2',shape=[self.state_dim,1]);
           b2=tf.get_variable('b2',shape=[1]);
-          q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,w1)+b1),w2)+b2;
+          q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,w1)+b1),w2)+b2;
+          #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,w1)+b1),w2)+b2;
         c_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic_nets');
         # param list
         param_list=d_params+m_params+c_params;
@@ -110,9 +117,13 @@ class CriticNetwork:
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          #Omega_dot[i]=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i];
+        #Omega_dot=tf.stack(Omega_dot,2);
+        #h=tf.reshape(Omega_dot,[-1,self.state_dim]);
         # get Q  
-        q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
+        q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
+        #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
         return state_input,action_input,q_value_output,target_update,program_order
 
     def update_target(self):
