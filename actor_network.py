@@ -7,6 +7,9 @@ from program import Program
 
 # Hyper Parameters
 LEARNING_RATE = 1e-3
+HIDDEN_SIZE=150;
+CONTEXT_SIZE=64;
+QUERY_SIZE=64;
 TAU = 0.001
 BATCH_SIZE = 64
 order_num=2
@@ -20,6 +23,9 @@ class ActorNetwork:
         self.fea_size=fea_size
         self.action_dim = action_dim
         self.order_num=order_num;
+        self.hidden_size=HIDDEN_SIZE;
+        self.context_size=CONTEXT_SIZE;
+        self.query_size=QUERY_SIZE;
         # create actor network
         self.state_input,self.action_output,self.net,self.program_order = self.create_network(state_dim,obj_num,fea_size,action_dim)
 
@@ -49,20 +55,20 @@ class ActorNetwork:
         self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,program_order,"actor");
         p=self.program.p;
         # Message Passing
-        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,"actor");
+        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,self.hidden_size,self.context_size,self.query_size,"actor");
         m_params=self.message_passing.net;
         # get h
         Omega_dot=self.message_passing.state_output;
-        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.fea_size]);
+        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.hidden_size]);
         Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
         Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          h+=tf.stack([p_list[i]]*self.hidden_size,1)*Omega_dot[i];
         # get a
         with tf.variable_scope('actor_nets'):
-          w=tf.get_variable('w',shape=[self.fea_size,self.action_dim]);
+          w=tf.get_variable('w',shape=[self.hidden_size,self.action_dim]);
           b=tf.get_variable('b',shape=[self.action_dim]);
           action_output=tf.tanh(tf.matmul(h,w)+b);
           #action_output=tf.tanh(tf.matmul(tf.tanh(h),w)+b);
@@ -90,13 +96,13 @@ class ActorNetwork:
         # run message_passing
         Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
         # get h
-        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.fea_size]);
+        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.hidden_size]);
         Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
         Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          h+=tf.stack([p_list[i]]*self.hidden_size,1)*Omega_dot[i];
         # get a
         action_output=tf.tanh(tf.matmul(h,a_net[0])+a_net[1]);
         #action_output=tf.tanh(tf.matmul(tf.tanh(h),a_net[0])+a_net[1]);

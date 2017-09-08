@@ -8,6 +8,9 @@ from program import Program
 
 # Parameters
 LEARNING_RATE = 1e-3
+HIDDEN_SIZE = 150;
+CONTEXT_SIZE = 64;
+QUERY_SIZE = 64;
 TAU = 0.001
 L2 = 0.01
 order_num=2
@@ -22,6 +25,9 @@ class CriticNetwork:
         self.fea_size=fea_size;
         self.action_dim=action_dim;
         self.order_num=order_num;
+        self.hidden_size=HIDDEN_SIZE;
+        self.context_size=CONTEXT_SIZE;
+        self.query_size=QUERY_SIZE;
         # create q network
         self.state_input,\
         self.action_input,\
@@ -61,25 +67,25 @@ class CriticNetwork:
         self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,program_order,"critic");
         p=self.program.p;
         # Message Passing
-        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,"critic");
+        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,self.hidden_size,self.context_size,self.query_size,"critic");
         m_params=self.message_passing.net;
         # get h
         Omega_dot=self.message_passing.state_output;
-        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.fea_size]);
+        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.hidden_size]);
         Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
         Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          h+=tf.stack([p_list[i]]*self.hidden_size,1)*Omega_dot[i];
         # get Q
         action_input = tf.placeholder("float",[None,action_dim]);
         with tf.variable_scope('critic_nets'):
-          w1=tf.get_variable('w1',shape=[self.action_dim,self.fea_size]);
-          b1=tf.get_variable('b1',shape=[self.fea_size]);
-          w2=tf.get_variable('w2',shape=[self.fea_size,1]);
+          w1=tf.get_variable('w1',shape=[self.action_dim,self.hidden_size]);
+          b1=tf.get_variable('b1',shape=[self.hidden_size]);
+          w2=tf.get_variable('w2',shape=[self.hidden_size,1]);
           b2=tf.get_variable('b2',shape=[1]);
-          q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,w1)+b1),w2)+b2;
+          q_value_output=tf.matmul(h+tf.nn.relu(tf.matmul(action_input,w1)+b1),w2)+b2;
           #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,w1)+b1),w2)+b2;
         c_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic_nets');
         # param list
@@ -105,13 +111,13 @@ class CriticNetwork:
         # run message_passing
         Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
         # get h
-        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.fea_size]);
+        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.hidden_size]);
         Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
         Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
         p_list=tf.unstack(p,self.obj_num,1);
         h=0;
         for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.fea_size,1)*Omega_dot[i]/2;
+          h+=tf.stack([p_list[i]]*self.hidden_size,1)*Omega_dot[i];
         # get Q  
         q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
         #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];

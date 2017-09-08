@@ -58,8 +58,12 @@ python3 gym_ddpg.py
 
 ### Settings
 In the environment, there are 4 objects, which are red/blue cube and sphere, respectively.
+
 Arm has two joints for making experiment more simple than the paper's one.
+
 Blue cube, red sphere and blue sphere are used for training, and red cube is used for zero-shot testing.
+
 The feature (row of capital theta) is 6 (Red, Blue, White, Cube, Sphere, Hand).
+
 The state dimension is 85 (5(4 objects and arm) * 17 (3/2/6/6 dimension are for position, qpos, feature, and feature of arm.)).
 

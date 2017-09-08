@@ -2,29 +2,29 @@ import tensorflow as tf
 import numpy as np
 import math
 
-# Hyper Parameters
-HIDDEN_SIZE = 64;
-CONTEXT_SIZE = 64;
-QUERY_SIZE = 64;
+# Hyper Parameter
 eps=1e-3;
 
 class Message_passing:
-    def __init__(self,sess,state_dim,obj_num,fea_size,p,state_input,postfix):
+    def __init__(self,sess,state_dim,obj_num,fea_size,p,state_input,hidden_size,context_size,query_size,postfix):
                 self.sess = sess;
                 self.state_dim = state_dim;
                 self.fea_size=fea_size;
                 self.obj_num=obj_num;
                 self.p=p;
                 self.state_input=state_input;
+                self.hidden_size=hidden_size;
+                self.context_size=context_size;
+                self.query_size=query_size;
                 self.postfix=postfix;
                 # create Message Passing nets
                 self.state_output,self.net = self.create_network();
                 self.params_num=len(self.net);
 
     def create_network(self):
-                hidden_size = HIDDEN_SIZE;
-                context_size = CONTEXT_SIZE;
-                query_size = QUERY_SIZE;
+                hidden_size = self.hidden_size;
+                context_size = self.context_size;
+                query_size = self.query_size;
                 state_input2 = tf.transpose(tf.reshape(self.state_input,[-1,self.obj_num,self.fea_size]),[0,2,1]);
                 state_input2 = tf.unstack(state_input2,self.obj_num,2);
                 # local transform function
@@ -32,8 +32,8 @@ class Message_passing:
                 with tf.variable_scope('message_passing_f_'+self.postfix):
                   w1=tf.get_variable('w1',shape=[self.fea_size,hidden_size]);
                   b1=tf.get_variable('b1',shape=[hidden_size]);
-                  w2=tf.get_variable('w2',shape=[hidden_size,self.fea_size]);
-                  b2=tf.get_variable('b2',shape=[self.fea_size]);
+                  w2=tf.get_variable('w2',shape=[hidden_size,hidden_size]);
+                  b2=tf.get_variable('b2',shape=[hidden_size]);
                 for i in range(len(state_input2)): 
                   with tf.variable_scope('message_passing_f_'+self.postfix,reuse=True):
                     layer1=tf.nn.relu(tf.matmul(state_input2[i],w1)+b1);
@@ -48,8 +48,8 @@ class Message_passing:
                 with tf.variable_scope('message_passing_r_'+self.postfix):
                   w1=tf.get_variable('w1',shape=[self.fea_size*2,hidden_size]);
                   b1=tf.get_variable('b1',shape=[hidden_size]);
-                  w2=tf.get_variable('w2',shape=[hidden_size,self.fea_size]);
-                  b2=tf.get_variable('b2',shape=[self.fea_size]);
+                  w2=tf.get_variable('w2',shape=[hidden_size,hidden_size]);
+                  b2=tf.get_variable('b2',shape=[hidden_size]);
                 r_in=np.zeros((self.obj_num,self.obj_num),dtype=object);
                 for i in range(self.obj_num):
                   for j in range(self.obj_num):
@@ -96,9 +96,9 @@ class Message_passing:
                   state_output[i]=f_out[i];
                   for j in range(self.obj_num):
                     if(i!=j):
-                      state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
+                      state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*hidden_size,1),r_out[i,j]);
                 state_output=tf.stack(list(state_output),1);
-                state_output=tf.reshape(state_output,[-1,self.state_dim]);
+                state_output=tf.reshape(state_output,[-1,self.obj_num*hidden_size]);
                 
                 f_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='message_passing_f_'+self.postfix);
                 r_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='message_passing_r_'+self.postfix);
@@ -159,9 +159,9 @@ class Message_passing:
                   state_output[i]=f_out[i];
                   for j in range(self.obj_num):
                     if(i!=j):
-                      state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.fea_size,1),r_out[i,j]);
+                      state_output[i]+=tf.multiply(tf.stack([alpha[i,j]]*self.hidden_size,1),r_out[i,j]);
                 state_output=tf.stack(list(state_output),1);
-                state_output=tf.reshape(state_output,[-1,self.state_dim]);
+                state_output=tf.reshape(state_output,[-1,self.obj_num*self.hidden_size]);
                 return state_output;
 
         

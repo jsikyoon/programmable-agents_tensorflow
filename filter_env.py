@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-fea_size=17;
+fea_size=25;
 
 def makeFilteredEnv(env):
   """ crate a new environment class with actions and states normalized to [-1,1] """
@@ -43,8 +43,8 @@ def makeFilteredEnv(env):
       if (self.spec.id == "PA-v1"):
         print("is Programmable Agent!!!");
         for i in range(self.obj_num):
-          self.o_sc[i*fea_size+15] = 40.
-          self.o_sc[i*fea_size+16] = 20.
+          self.o_sc[i*fea_size+23] = 40.
+          self.o_sc[i*fea_size+24] = 20.
         self.r_sc = 200.
         self.r_c = 0.
       
