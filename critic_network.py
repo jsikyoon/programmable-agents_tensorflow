@@ -3,44 +3,31 @@ import tensorflow as tf
 import numpy as np
 import math
 from detector import Detector
-from message_passing import Message_passing
 from program import Program
+from message_passing import Message_passing
 
-# Parameters
+LAYER1_SIZE = 500
+LAYER2_SIZE =400
 LEARNING_RATE = 1e-3
-HIDDEN_SIZE = 150;
-CONTEXT_SIZE = 64;
-QUERY_SIZE = 64;
 TAU = 0.001
 L2 = 0.01
-order_num=2
 
 class CriticNetwork:
     """docstring for CriticNetwork"""
-    def __init__(self,sess,state_dim,obj_num,fea_size,action_dim):
-        self.time_step = 0;
-        self.sess = sess;
-        self.state_dim=state_dim;
-        self.obj_num=obj_num;
-        self.fea_size=fea_size;
-        self.action_dim=action_dim;
-        self.order_num=order_num;
-        self.hidden_size=HIDDEN_SIZE;
-        self.context_size=CONTEXT_SIZE;
-        self.query_size=QUERY_SIZE;
+    def __init__(self,sess,state_dim,action_dim):
+        self.time_step = 0
+        self.sess = sess
         # create q network
         self.state_input,\
         self.action_input,\
         self.q_value_output,\
-        self.net,\
-        self.program_order= self.create_q_network(state_dim,action_dim)
+        self.net = self.create_q_network(state_dim,action_dim)
 
         # create target q network (the same structure with q network)
         self.target_state_input,\
         self.target_action_input,\
         self.target_q_value_output,\
-        self.target_update,\
-        self.target_program_order = self.create_target_q_network(state_dim,action_dim,self.net)
+        self.target_update = self.create_target_q_network(state_dim,action_dim,self.net)
 
         self.create_training_method()
 
@@ -58,48 +45,66 @@ class CriticNetwork:
         self.action_gradients = tf.gradients(self.q_value_output,self.action_input)
 
     def create_q_network(self,state_dim,action_dim):
+        # the layer size could be changed
+        layer1_size = LAYER1_SIZE
+        layer2_size = LAYER2_SIZE
+
         state_input = tf.placeholder("float",[None,state_dim])
-        program_order = tf.placeholder("float",[None,(self.obj_num-1)]);
-        # Detector
-        self.detector=Detector(self.sess,self.state_dim,self.obj_num,self.fea_size,state_input,"critic");
-        d_params=self.detector.net;
-        # Program
-        self.program=Program(self.sess,self.state_dim,self.obj_num,self.fea_size,self.detector.Theta,program_order,"critic");
+        program_order = tf.placeholder("float",[None,4]);
+        self.program_order = program_order;
+        #detector
+        self.detector=Detector(self.sess,state_dim,5,15,state_input,"_critic");
+        Theta=self.detector.Theta;
+        detector_params=self.detector.net;
+        #program
+        self.program=Program(self.sess,state_dim,5,15,Theta,program_order,"_critic");
         p=self.program.p;
-        # Message Passing
-        self.message_passing=Message_passing(self.sess,self.state_dim,self.obj_num,self.fea_size,self.program.p,state_input,self.hidden_size,self.context_size,self.query_size,"critic");
-        m_params=self.message_passing.net;
-        # get h
-        Omega_dot=self.message_passing.state_output;
-        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.hidden_size]);
-        Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
-        Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
-        p_list=tf.unstack(p,self.obj_num,1);
+        #message_passing
+        self.message_passing=Message_passing(self.sess,state_dim,5,15,p,state_input,150,64,64,"_critic");
+        state_input2 = self.message_passing.state_output;
+        message_passing_params = self.message_passing.net;
+        #get h
+        state_input2 = tf.reshape(state_input2,[-1,5,150]);
+        state_input2 = tf.unstack(state_input2,5,1);
+        p=tf.unstack(p,5,1);
         h=0;
-        for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.hidden_size,1)*Omega_dot[i];
-        # get Q
-        action_input = tf.placeholder("float",[None,action_dim]);
-        with tf.variable_scope('critic_nets'):
-          w1=tf.get_variable('w1',shape=[self.action_dim,self.hidden_size]);
-          b1=tf.get_variable('b1',shape=[self.hidden_size]);
-          w2=tf.get_variable('w2',shape=[self.hidden_size,1]);
-          b2=tf.get_variable('b2',shape=[1]);
-          q_value_output=tf.matmul(h+tf.nn.relu(tf.matmul(action_input,w1)+b1),w2)+b2;
-          #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,w1)+b1),w2)+b2;
-        c_params=tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='critic_nets');
-        # param list
-        param_list=d_params+m_params+c_params;
-        return state_input,action_input,q_value_output,param_list,program_order;
+        for i in range(5):
+          h+=tf.stack([p[i]]*150,1)*state_input2[i];
+        action_input = tf.placeholder("float",[None,action_dim])
+
+        """
+        W1 = self.variable([150,layer1_size],150)
+        b1 = self.variable([layer1_size],150)
+        W2 = self.variable([layer1_size,layer2_size],layer1_size+action_dim)
+        W2_action = self.variable([action_dim,layer2_size],layer1_size+action_dim)
+        b2 = self.variable([layer2_size],layer1_size+action_dim)
+        W3 = tf.Variable(tf.random_uniform([layer2_size,1],-3e-3,3e-3))
+        b3 = tf.Variable(tf.random_uniform([1],-3e-3,3e-3))
+
+        layer1 = tf.nn.relu(tf.matmul(h,W1) + b1)
+        layer2 = tf.nn.relu(tf.matmul(layer1,W2) + tf.matmul(action_input,W2_action) + b2)
+        q_value_output = tf.identity(tf.matmul(layer2,W3) + b3);
+
+        params = detector_params+message_passing_params+[W1,b1,W2,W2_action,b2,W3,b3];
+        """        
+        W1 = self.variable([action_dim,150],action_dim)
+        b1 = self.variable([150],action_dim)
+        W2 = tf.Variable(tf.random_uniform([150,1],-3e-3,3e-3))
+        b2 = tf.Variable(tf.random_uniform([1],-3e-3,3e-3))
+        q_value_output = tf.matmul(tf.tanh(h+tf.matmul(action_input,W1)+b1),W2)+b2;
+        params = detector_params+message_passing_params+[W1,b1,W2,b2];
+        
+        return state_input,action_input,q_value_output,params
 
     def create_target_q_network(self,state_dim,action_dim,net):
         state_input = tf.placeholder("float",[None,state_dim])
-        program_order = tf.placeholder("float",[None,(self.obj_num-1)]);
+        program_order = tf.placeholder("float",[None,4]);
+        self.target_program_order = program_order;
         action_input = tf.placeholder("float",[None,action_dim])
-
         ema = tf.train.ExponentialMovingAverage(decay=1-TAU)
         target_update = ema.apply(net)
         target_net = [ema.average(x) for x in net]
+
         # params for each net
         d_net=net[:self.detector.params_num];
         m_net=net[self.detector.params_num:(self.detector.params_num+self.message_passing.params_num)];
@@ -109,51 +114,55 @@ class CriticNetwork:
         # run program
         p=self.program.run_target_nets(Theta,program_order);
         # run message_passing
-        Omega_dot=self.message_passing.run_target_nets(state_input,p,m_net);
-        # get h
-        Omega_dot=tf.reshape(Omega_dot,[-1,self.obj_num,self.hidden_size]);
-        Omega_dot=tf.transpose(Omega_dot,perm=[0,2,1]);
-        Omega_dot=tf.unstack(Omega_dot,self.obj_num,2);
-        p_list=tf.unstack(p,self.obj_num,1);
+        state_input2=self.message_passing.run_target_nets(state_input,p,m_net);
+        #get h
+        state_input2 = tf.reshape(state_input2,[-1,5,150]);
+        state_input2 = tf.unstack(state_input2,5,1);
+        p=tf.unstack(p,5,1);
         h=0;
-        for i in range(self.obj_num):
-          h+=tf.stack([p_list[i]]*self.hidden_size,1)*Omega_dot[i];
-        # get Q  
-        q_value_output=tf.matmul(tf.nn.relu(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
-        #q_value_output=tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
-        return state_input,action_input,q_value_output,target_update,program_order
+        for i in range(5):
+          h+=tf.stack([p[i]]*150,1)*state_input2[i];
+
+        """
+        layer1 = tf.nn.relu(tf.matmul(h,c_net[0]) + c_net[1])
+        layer2 = tf.nn.relu(tf.matmul(layer1,c_net[2]) + tf.matmul(action_input,c_net[3]) + c_net[4])
+        q_value_output = tf.identity(tf.matmul(layer2,c_net[5]) + c_net[6])
+        """
+        q_value_output = tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
+
+        return state_input,action_input,q_value_output,target_update
 
     def update_target(self):
         self.sess.run(self.target_update)
 
-    def train(self,y_batch,state_batch,action_batch,program_order):
+    def train(self,y_batch,state_batch,action_batch,program_order_batch):
         self.time_step += 1
         self.sess.run(self.optimizer,feed_dict={
             self.y_input:y_batch,
             self.state_input:state_batch,
-            self.action_input:action_batch,
-            self.program_order:program_order
+            self.program_order:program_order_batch,
+            self.action_input:action_batch
             })
 
-    def gradients(self,state_batch,action_batch,program_order):
+    def gradients(self,state_batch,action_batch,program_order_batch):
         return self.sess.run(self.action_gradients,feed_dict={
             self.state_input:state_batch,
-            self.action_input:action_batch,
-            self.program_order:program_order
+            self.program_order:program_order_batch,
+            self.action_input:action_batch
             })[0]
 
-    def target_q(self,state_batch,action_batch,program_order):
+    def target_q(self,state_batch,action_batch,program_order_batch):
         return self.sess.run(self.target_q_value_output,feed_dict={
             self.target_state_input:state_batch,
-            self.target_action_input:action_batch,
-            self.target_program_order:program_order
+            self.target_program_order:program_order_batch,
+            self.target_action_input:action_batch
             })
 
-    def q_value(self,state_batch,action_batch,program_order):
+    def q_value(self,state_batch,action_batch,program_order_batch):
         return self.sess.run(self.q_value_output,feed_dict={
             self.state_input:state_batch,
-            self.action_input:action_batch,
-            self.program_order:program_order})
+            self.program_order:program_order_batch,
+            self.action_input:action_batch})
 
     # f fan-in size
     def variable(self,shape,f):

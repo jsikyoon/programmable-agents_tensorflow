@@ -1,53 +1,72 @@
 import filter_env
+from gym import wrappers
 from ddpg import *
 import gc
 gc.enable()
 
+#ENV_NAME = 'InvertedPendulum-v1'
+#ENV_NAME = 'Reacher-v1'
 ENV_NAME = 'PA-v1'
 EPISODES = 100000
 TEST = 10
-
+order_list=[[1,0,0,0],
+            [0,1,0,0],
+            [0,0,1,0],
+            [0,0,0,1]];
 def main():
     env = filter_env.makeFilteredEnv(gym.make(ENV_NAME))
     agent = DDPG(env)
+    #env.monitor.start('experiments/' + ENV_NAME,force=True)
+    #env=wrappers.Monitor(env,'experiments2/'+ENV_NAME,force=True);
 
-    order_list=[[1,0,0,0],
-                [0,1,0,0],
-                [0,0,1,0],
-                [0,0,0,1]];
-    tr_reward=0;ts_reward=0;
-    for episode in range(EPISODES):
-        # training with blue cube, red sphere and blue sphere
+    for episode in xrange(EPISODES):
         program_order_idx=np.random.randint(1,4);
-        #program_order_idx=0;
+        #program_order_idx=1;
         env.set_order(program_order_idx,order_list[program_order_idx]);
-        state = env.reset();
+        state = env.reset()
+        #print "episode:",episode
         # Train
-        for step in range(env.spec.timestep_limit):
-            action = agent.noise_action(state,env.program_order)
+        for step in xrange(env.spec.timestep_limit):
+            action = agent.noise_action(state,order_list[program_order_idx])
             next_state,reward,done,_ = env.step(action)
-            tr_reward+=reward;
-            agent.perceive(state,action,reward,next_state,done,env.program_order)
+            agent.perceive(state,order_list[program_order_idx],action,reward,next_state,done)
             state = next_state
             if done:
                 break
         # Testing:
-        if(episode % 100 == 0 and episode > 100):
-            for i in range(TEST):
-                # testing with red cube
-                program_order_idx=0;
-                env.set_order(program_order_idx,order_list[program_order_idx]);
-                state = env.reset();
-                for j in range(env.spec.timestep_limit):
-                    action = agent.action(state,env.program_order);
-                    state,reward,done,_ = env.step(action);
-                    ts_reward += reward;
-                    if done:
-                        break;
-            ave_tr_reward = tr_reward/100;
-            ave_ts_reward = ts_reward/TEST;
-            tr_reward=0;ts_reward=0;
-            print("episode: "+str(episode)+", Training Average Reward: "+str(ave_tr_reward)+", Evaluation Average Reward: "+str(ave_ts_reward));
+        if episode % 100 == 0 and episode > 100:
+			ts_reward = 0
+			for i in xrange(TEST):
+                                program_order_idx=0;
+                                env.set_order(program_order_idx,order_list[program_order_idx]);
+				state = env.reset()
+				for j in xrange(env.spec.timestep_limit):
+					#env.render()
+					action = agent.action(state,order_list[program_order_idx]) # direct action for test
+					state,reward,done,_ = env.step(action)
+					ts_reward += reward
+					if done:
+						break
+			ave_ts_reward = ts_reward/TEST/200
+			tr_reward = 0
+			for i in xrange(TEST):
+                                program_order_idx=np.random.randint(1,4);
+                                #program_order_idx=1;
+                                env.set_order(program_order_idx,order_list[program_order_idx]);
+				state = env.reset()
+				for j in xrange(env.spec.timestep_limit):
+					#env.render()
+					action = agent.action(state,order_list[program_order_idx]) # direct action for test
+					state,reward,done,_ = env.step(action)
+					tr_reward += reward
+					if done:
+						break
+			ave_tr_reward = tr_reward/TEST/200
+                        print 'episode: ',episode,'Unseen Case Average Reward:',ave_ts_reward,'Training Case Average Reward:',ave_tr_reward
+                        #if(ave_ts_reward>=-3.75) or (ave_tr_reward>=-3.75):
+                        #  print("Done!!");
+                        #  break;
+    #env.monitor.close()
 
 if __name__ == '__main__':
     main()

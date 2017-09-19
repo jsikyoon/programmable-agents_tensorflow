@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-fea_size=25;
+fea_size=15;
 
 def makeFilteredEnv(env):
   """ crate a new environment class with actions and states normalized to [-1,1] """
@@ -10,8 +10,9 @@ def makeFilteredEnv(env):
     raise RuntimeError('Environment with continous action space (i.e. Box) required.')
   if not type(obsp)==gym.spaces.box.Box:
     raise RuntimeError('Environment with continous observation space (i.e. Box) required.')
+
   env_type = type(env)
-  
+
   class FilteredEnv(env_type):
     def __init__(self):
       self.__dict__.update(env.__dict__) # transfer properties
@@ -26,6 +27,8 @@ def makeFilteredEnv(env):
       else:
         self.o_c = np.zeros_like(obsp.high)
         self.o_sc = np.ones_like(obsp.high)
+
+      # The number of objects
       self.obj_num=int(len(self.o_sc)/fea_size);
       
       # Action space
@@ -34,26 +37,29 @@ def makeFilteredEnv(env):
       sc = (h-l)
       self.a_c = (h+l)/2.
       self.a_sc = sc / 2.
-      
+
       # Rewards
       self.r_sc = 0.1
       self.r_c = 0.
 
       # Special cases
-      if (self.spec.id == "PA-v1"):
-        print("is Programmable Agent!!!");
-        for i in range(self.obj_num):
-          self.o_sc[i*fea_size+23] = 40.
-          self.o_sc[i*fea_size+24] = 20.
+      if self.spec.id == "Reacher-v1":
+        self.o_sc[6] = 40.
+        self.o_sc[7] = 20.
         self.r_sc = 200.
         self.r_c = 0.
-      
+
+      if self.spec.id == "PA-v1":
+        for i in range(5):
+          self.o_sc[i*fea_size+13] = 40.
+          self.o_sc[i*fea_size+14] = 20.
+        self.r_sc = 200.
+        self.r_c = 0.
+
       # Check and assign transformed spaces
       self.observation_space = gym.spaces.Box(self.filter_observation(obsp.low),
                                               self.filter_observation(obsp.high))
       self.action_space = gym.spaces.Box(-np.ones_like(acsp.high),np.ones_like(acsp.high))
-      self.fea_size=int(fea_size);
-      self.obj_num=int(self.observation_space.shape[0]/self.fea_size);
       def assertEqual(a,b): assert np.all(a == b), "{} != {}".format(a,b)
       assertEqual(self.filter_action(self.action_space.low), acsp.low)
       assertEqual(self.filter_action(self.action_space.high), acsp.high)
@@ -68,22 +74,31 @@ def makeFilteredEnv(env):
       ''' has to be applied manually otherwise it makes the reward_threshold invalid '''
       return self.r_sc*reward+self.r_c
 
+    # conditional reward for program
     def get_reward(self,obs,ac_f):
       obs=np.reshape(obs,[(self.obj_num),fea_size]);
       vec=obs[self.program_order_idx,:3];
       reward_dist = -np.linalg.norm(vec);
       reward_ctrl = -np.square(ac_f).sum();
+      #print("=======");
+      #print(reward_dist);
+      #print(reward_ctrl);
       return reward_dist+reward_ctrl;
-      
+
+
     def step(self,action):
+
       ac_f = np.clip(self.filter_action(action),self.action_space.low,self.action_space.high)
+
       obs, reward, term, info = env_type.step(self,ac_f) # super function
-      # reward for each program
       reward = self.get_reward(obs,ac_f);
-      reward = self.filter_reward(reward);
+
+      reward=self.filter_reward(reward);
+
       obs_f = self.filter_observation(obs)
+
       return obs_f, reward, term, info
-    
+
     def set_order(self,program_order_idx,program_order):
       self.program_order_idx=program_order_idx;
       self.program_order=program_order;
