@@ -34,6 +34,7 @@ bash run_require.sh
 Then you can check followed lines are added in <python path>/dist-packeges/gym/envs/__init__.py and <python path>/dist-packages/gym/envs/mujoco/__init__.py respectively.
 
 `
+
 register(
 
     id='PA-v1',
@@ -45,6 +46,7 @@ register(
     reward_threshold=-3.75,
 
 )
+
 `
 
 `
