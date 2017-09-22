@@ -35,10 +35,15 @@ Then you can check followed lines are added in <python path>/dist-packeges/gym/e
 
 `
 register(
+
     id='PA-v1',
+
     entry_point='gym.envs.mujoco:PAEnv',
+
     max_episode_steps=50,
+
     reward_threshold=-3.75,
+
 )
 `
 
