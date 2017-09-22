@@ -33,19 +33,15 @@ bash run_require.sh
 
 Then you can check followed lines are added in <python path>/dist-packeges/gym/envs/__init__.py and <python path>/dist-packages/gym/envs/mujoco/__init__.py respectively.
 
-`
 
-register(
-    id='PA-v1',
+register(id='PA-v1',
 
     entry_point='gym.envs.mujoco:PAEnv',
 
     max_episode_steps=50,
 
-    reward_threshold=-3.75,
-)
+    reward_threshold=-3.75,)
 
-`
 
 `
 from gym.envs.mujoco.pa import PAEnv
