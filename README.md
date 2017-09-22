@@ -22,7 +22,8 @@ Environment Settings
 
 This module uses OpenAI GYM. for installing that, please refer https://github.com/openai/gym.
 
-This module uses Mujoco physics engine and mujoco_py from OpenAI. For installing that, please refer https://github.com/openai/mujoco-py.
+This module uses Mujoco physics engine and mujoco_py 0.5 branch from OpenAI. For installing that, please refer https://github.com/openai/mujoco-py.
+(`pip install mujoco-py==0.5.7`)
 
 For adding this module on your gym, you need to run bellowed bash script.
 
@@ -30,7 +31,7 @@ For adding this module on your gym, you need to run bellowed bash script.
 bash run_require.sh
 `
 
-Then you can check followed lines are added in <python3 path>/dist-packeges/gym/envs/__init__.py and <python3 path>/dist-packages/gym/envs/mujoco/__init__.py respectively.
+Then you can check followed lines are added in <python path>/dist-packeges/gym/envs/__init__.py and <python path>/dist-packages/gym/envs/mujoco/__init__.py respectively.
 
 `
 register(
@@ -53,7 +54,7 @@ Note that run_require.sh script adds above lines on your gym configure, thus ple
 -----------------
 
 `
-python3 gym_ddpg.py
+python gym_ddpg.py
 `
 
 ### Settings
@@ -65,5 +66,5 @@ Blue cube, red sphere and blue sphere are used for training, and red cube is use
 
 The feature (row of capital theta) is 6 (Red, Blue, White, Cube, Sphere, Hand).
 
-The state dimension is 85 (5(4 objects and arm) * 17 (3/2/6/6 dimension are for position, qpos, feature, and feature of arm.)).
+The state dimension is 75 (5(4 objects and arm) * 15 (3/6/6 dimension are for position, feature, and feature of arm.)).
 

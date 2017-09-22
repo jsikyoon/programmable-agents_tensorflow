@@ -72,21 +72,6 @@ class CriticNetwork:
           h+=tf.stack([p[i]]*150,1)*state_input2[i];
         action_input = tf.placeholder("float",[None,action_dim])
 
-        """
-        W1 = self.variable([150,layer1_size],150)
-        b1 = self.variable([layer1_size],150)
-        W2 = self.variable([layer1_size,layer2_size],layer1_size+action_dim)
-        W2_action = self.variable([action_dim,layer2_size],layer1_size+action_dim)
-        b2 = self.variable([layer2_size],layer1_size+action_dim)
-        W3 = tf.Variable(tf.random_uniform([layer2_size,1],-3e-3,3e-3))
-        b3 = tf.Variable(tf.random_uniform([1],-3e-3,3e-3))
-
-        layer1 = tf.nn.relu(tf.matmul(h,W1) + b1)
-        layer2 = tf.nn.relu(tf.matmul(layer1,W2) + tf.matmul(action_input,W2_action) + b2)
-        q_value_output = tf.identity(tf.matmul(layer2,W3) + b3);
-
-        params = detector_params+message_passing_params+[W1,b1,W2,W2_action,b2,W3,b3];
-        """        
         W1 = self.variable([action_dim,150],action_dim)
         b1 = self.variable([150],action_dim)
         W2 = tf.Variable(tf.random_uniform([150,1],-3e-3,3e-3))
@@ -106,9 +91,9 @@ class CriticNetwork:
         target_net = [ema.average(x) for x in net]
 
         # params for each net
-        d_net=net[:self.detector.params_num];
-        m_net=net[self.detector.params_num:(self.detector.params_num+self.message_passing.params_num)];
-        c_net=net[(self.detector.params_num+self.message_passing.params_num):];
+        d_net=target_net[:self.detector.params_num];
+        m_net=target_net[self.detector.params_num:(self.detector.params_num+self.message_passing.params_num)];
+        c_net=target_net[(self.detector.params_num+self.message_passing.params_num):];
         # run detector
         Theta=self.detector.run_target_nets(state_input,d_net);
         # run program
@@ -123,11 +108,6 @@ class CriticNetwork:
         for i in range(5):
           h+=tf.stack([p[i]]*150,1)*state_input2[i];
 
-        """
-        layer1 = tf.nn.relu(tf.matmul(h,c_net[0]) + c_net[1])
-        layer2 = tf.nn.relu(tf.matmul(layer1,c_net[2]) + tf.matmul(action_input,c_net[3]) + c_net[4])
-        q_value_output = tf.identity(tf.matmul(layer2,c_net[5]) + c_net[6])
-        """
         q_value_output = tf.matmul(tf.tanh(h+tf.matmul(action_input,c_net[0])+c_net[1]),c_net[2])+c_net[3];
 
         return state_input,action_input,q_value_output,target_update

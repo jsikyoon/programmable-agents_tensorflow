@@ -18,7 +18,6 @@ def main():
     agent = DDPG(env)
     #env.monitor.start('experiments/' + ENV_NAME,force=True)
     #env=wrappers.Monitor(env,'experiments2/'+ENV_NAME,force=True);
-
     for episode in xrange(EPISODES):
         program_order_idx=np.random.randint(1,4);
         #program_order_idx=1;
@@ -63,6 +62,9 @@ def main():
 						break
 			ave_tr_reward = tr_reward/TEST/200
                         print 'episode: ',episode,'Unseen Case Average Reward:',ave_ts_reward,'Training Case Average Reward:',ave_tr_reward
+                        f=open("logs","a");
+                        f.writelines('episode: '+str(episode)+'Unseen Case Average Reward:'+str(ave_ts_reward)+'Training Case Average Reward:'+str(ave_tr_reward)+"\n");
+                        f.close();
                         #if(ave_ts_reward>=-3.75) or (ave_tr_reward>=-3.75):
                         #  print("Done!!");
                         #  break;

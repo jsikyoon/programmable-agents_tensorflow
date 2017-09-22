@@ -22,13 +22,14 @@ class PAEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
     def reset_model(self):
         qpos = self.np_random.uniform(low=-0.1, high=0.1, size=self.model.nq) + self.init_qpos
-        while True:
-            self.goal = self.np_random.uniform(low=-.2, high=.2, size=2)
-            if np.linalg.norm(self.goal) < 2:
-                break
-        qpos[-2:] = self.goal
+        for i in range(1,5):
+          while True:
+              self.goal = self.np_random.uniform(low=-.2, high=.2, size=2)
+              if np.linalg.norm(self.goal) < 2:
+                  break
+          qpos[2*i:2*(i+1)] = self.goal
         qvel = self.init_qvel + self.np_random.uniform(low=-.005, high=.005, size=self.model.nv)
-        qvel[-2:] = 0
+        qvel[2:] = 0
         self.set_state(qpos, qvel)
         return self._get_obs()
 
@@ -65,11 +66,11 @@ class PAEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         Omega[7,3]=1.0;
         Omega[8,4]=1.0;
         # arm state
-        theta = self.sim.data.qpos.flat[:2];
+        theta = self.model.data.qpos.flat[:2];
         for i in range(self.object_num):
           Omega[9:11,i]=np.cos(theta);
           Omega[11:13,i]=np.sin(theta);
-          Omega[13:15,i]=self.sim.data.qvel.flat[:2];
+          Omega[13:15,i]=self.model.data.qvel.flat[:2];
         """  
         #qpos
         for i in range(self.object_num):
@@ -79,16 +80,13 @@ class PAEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         Omega=np.reshape(Omega,[(self.object_num)*self.fea_size]);
         return Omega;
 
-    # feature of original gym reacher
+    # reacher-v1 state feature
     def _get_obs2(self):
-        #theta = self.model.data.qpos.flat[:2]
-        theta = self.sim.data.qpos.flat[:2]
+        theta = self.model.data.qpos.flat[:2]
         return np.concatenate([
             np.cos(theta),
             np.sin(theta),
-            #self.model.data.qpos.flat[2:],
-            #self.model.data.qvel.flat[:2],
-            self.sim.data.qpos.flat[2:],
-            self.sim.data.qvel.flat[:2],
-            self.get_body_com("hand") - self.get_body_com("target1")
+            self.model.data.qpos.flat[2:],
+            self.model.data.qvel.flat[:2],
+            self.get_body_com("fingertip") - self.get_body_com("target")
         ])
