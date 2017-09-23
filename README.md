@@ -58,8 +58,16 @@ Note that run_require.sh script adds above lines on your gym configure, thus ple
  Multiple Object Reacher
 -----------------
 
+For running programmable nets,
+
 `
 python gym_ddpg.py
+`
+
+For running canonical nets,
+
+`
+python gym_ddpg_canonical.py
 `
 
 ### Settings
