@@ -63,7 +63,7 @@ def main():
 						break
 			ave_tr_reward = tr_reward/TEST/200
                         print 'episode: ',episode,'Unseen Case Average Reward:',ave_ts_reward,'Training Case Average Reward:',ave_tr_reward
-                        f=open("logs","a");
+                        f=open("canonical_logs","a");
                         f.writelines('episode: '+str(episode)+'Unseen Case Average Reward:'+str(ave_ts_reward)+'Training Case Average Reward:'+str(ave_tr_reward)+"\n");
                         f.close();
                         #if(ave_ts_reward>=-3.75):

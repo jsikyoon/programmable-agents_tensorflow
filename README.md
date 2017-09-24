@@ -71,13 +71,24 @@ python gym_ddpg_canonical.py
 `
 
 ### Settings
+
 In the environment, there are 4 objects, which are red/blue cube and sphere, respectively.
 
 Arm has two joints for making experiment more simple than the paper's one.
+
+![alt tag](https://github.com/jaesik817/programmable-agents_tensorflow/blob/master/figures/pa_example.PNG)
 
 Blue cube, red sphere and blue sphere are used for training, and red cube is used for zero-shot testing.
 
 The feature (row of capital theta) is 6 (Red, Blue, White, Cube, Sphere, Hand).
 
 The state dimension is 75 (5(4 objects and arm) * 15 (3/6/6 dimension are for position, feature, and feature of arm.)).
+
+Canonical nets are followed same topology of the paper.
+
+### Results
+
+Canonical nets showed that is not working for unseen objects as followed.
+
+![alt tag](https://github.com/jaesik817/programmable-agents_tensorflow/blob/master/figures/canonical_result.PNG)
 
