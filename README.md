@@ -90,5 +90,13 @@ Canonical nets are followed same topology of the paper.
 
 Canonical nets showed that is not working for unseen objects as followed.
 
+In this case, training case is just blue cube, and test case is red cube.
+
 ![alt tag](https://github.com/jaesik817/programmable-agents_tensorflow/blob/master/figures/canonical_result.PNG)
 
+Programmable nets showed that is working for unseen objects as followed.
+
+In this case, training cases are blud cube, red/blue sphere, and test case is red cube.
+
+![alt tag](https://github.com/jaesik817/programmable-agents_tensorflow/blob/master/figures/pa_result.PNG)
+ 
